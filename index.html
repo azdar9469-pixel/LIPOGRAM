@@ -25,12 +25,7 @@
   --warning:      #f59e0b;
   --danger:       #ef4444;
   --gold:         #fbbf24;
-  
-  --radius-sm:12px;
-  --radius-md:16px;
-  --radius-lg:24px;
-  --radius-pill:999px;
-  
+  --radius-sm:12px;--radius-md:16px;--radius-lg:24px;--radius-pill:999px;
   --ease-out:cubic-bezier(0.16, 1, 0.3, 1);
   color-scheme:dark;
 }
@@ -48,15 +43,9 @@ body{
 ::-webkit-scrollbar{width:0;height:0}
 input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:none;border:none;background:none}
 
-#app{
-  position:relative;width:100%;max-width:440px;
-  height:100vh;height:100dvh;
-  background:var(--bg);overflow:hidden;
-}
+#app{position:relative;width:100%;max-width:440px;height:100vh;height:100dvh;background:var(--bg);overflow:hidden;}
 
-@media(min-width:520px){
-  #app{height:min(900px,100dvh);border-radius:32px;box-shadow:0 0 0 1px var(--border-1)}
-}
+@media(min-width:520px){#app{height:min(900px,100dvh);border-radius:32px;box-shadow:0 0 0 1px var(--border-1)}}
 
 .screen{
   position:absolute;inset:0;display:flex;flex-direction:column;
@@ -68,51 +57,32 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 
 #scr-splash{align-items:center;justify-content:center;}
 .splash{display:flex;flex-direction:column;align-items:center;gap:20px}
-.splash-logo{
-  width:100px;height:100px;border-radius:28px;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--accent-primary);overflow:hidden;
-}
+.splash-logo{width:100px;height:100px;border-radius:28px;display:flex;align-items:center;justify-content:center;background:var(--accent-primary);overflow:hidden;}
 .splash-logo img{width:100%;height:100%;object-fit:cover}
 .splash-name{font-size:32px;font-weight:800;letter-spacing:-1px}
 .splash-sub{font-size:12px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;font-weight:600}
 
 #scr-auth{overflow-y:auto;padding:calc(40px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom))}
 .auth-head{text-align:center;margin-bottom:32px}
-.auth-logo{
-  width:72px;height:72px;border-radius:20px;margin:0 auto 16px;
-  background:var(--accent-primary);overflow:hidden;
-}
+.auth-logo{width:72px;height:72px;border-radius:20px;margin:0 auto 16px;background:var(--accent-primary);overflow:hidden;}
 .auth-logo img{width:100%;height:100%;object-fit:cover}
 .auth-head h1{font-size:24px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
 .auth-head p{font-size:14px;color:var(--text-secondary)}
 
-.auth-tabs{
-  display:flex;background:var(--surface-1);border-radius:var(--radius-md);padding:4px;margin-bottom:24px;
-}
-.auth-tab{
-  flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text-secondary);
-  cursor:pointer;transition:all 0.2s;
-}
+.auth-tabs{display:flex;background:var(--surface-1);border-radius:var(--radius-md);padding:4px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
 .auth-tab.active{background:var(--surface-3);color:var(--text-primary)}
 
 .field{margin-bottom:16px}
 .field label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding-left:4px;font-weight:500;}
-.input-wrap{
-  display:flex;align-items:center;gap:12px;background:var(--surface-1);
-  border:1px solid var(--border-1);border-radius:var(--radius-md);padding:0 16px;
-  transition:border-color 0.2s;
-}
+.input-wrap{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--border-1);border-radius:var(--radius-md);padding:0 16px;transition:border-color 0.2s;}
 .input-wrap:focus-within{border-color:var(--accent-primary);}
 .input-wrap .pfx{color:var(--text-secondary);flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;}
 .input-wrap .pfx svg{width:18px;height:18px}
 .input-wrap input{flex:1;padding:16px 0;background:none;font-size:15px;color:var(--text-primary);min-width:0;}
 .input-wrap input::placeholder{color:var(--text-tertiary)}
 
-.btn{
-  width:100%;padding:16px;border-radius:var(--radius-md);font-size:15px;font-weight:600;cursor:pointer;
-  transition:opacity 0.2s, transform 0.1s;user-select:none;
-}
+.btn{width:100%;padding:16px;border-radius:var(--radius-md);font-size:15px;font-weight:600;cursor:pointer;transition:opacity 0.2s, transform 0.1s;user-select:none;}
 .btn:active{transform:scale(0.98)}
 .btn-primary{background:var(--text-primary);color:var(--bg);}
 .btn-ghost{background:var(--surface-1);color:var(--text-primary);border:1px solid var(--border-1);}
@@ -120,65 +90,29 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .hidden{display:none!important}
 
 .avatar-picker{display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:24px}
-.ap-circle{
-  width:90px;height:90px;border-radius:50%;background:var(--surface-1);
-  border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;
-  cursor:pointer;overflow:hidden;transition:border-color 0.2s;
-}
+.ap-circle{width:90px;height:90px;border-radius:50%;background:var(--surface-1);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:border-color 0.2s;}
 .ap-circle.has{border:none}
 .ap-plus{font-size:32px;color:var(--text-secondary);font-weight:300}
-.ap-hint{font-size:12px;color:var(--text-secondary);font-weight:500}
 .ap-svgs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;width:100%;max-width:280px}
-.ap-svg{
-  aspect-ratio:1;border-radius:50%;overflow:hidden;
-  background:var(--surface-1);cursor:pointer;border:none;padding:0;
-}
+.ap-svg{aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--surface-1);cursor:pointer;border:none;padding:0;}
 .ap-svg svg{width:100%;height:100%}
 
-.app-header{
-  display:flex;align-items:center;gap:12px;
-  padding:calc(16px + env(safe-area-inset-top)) 16px 16px;
-  position:relative;z-index:6;flex:none;background:var(--bg);
-  border-bottom:1px solid var(--border-1);
-}
-.header-avatar{
-  width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;
-  cursor:pointer;
-}
+.app-header{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;position:relative;z-index:6;flex:none;background:var(--bg);border-bottom:1px solid var(--border-1);}
+.header-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;cursor:pointer;}
 .header-avatar .av{width:100%!important;height:100%!important;font-size:16px!important}
 .header-title-wrap{flex:1;min-width:0}
 .header-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .header-actions{display:flex;gap:8px;flex:none}
-.icon-btn{
-  width:40px;height:40px;border-radius:12px;background:var(--surface-1);
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  color:var(--text-primary);transition:background 0.2s;
-}
+.icon-btn{width:40px;height:40px;border-radius:12px;background:var(--surface-1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-primary);transition:background 0.2s;}
 .icon-btn:active{background:var(--surface-2)}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 .pages{position:relative;flex:1;overflow:hidden}
-.page{
-  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
-  padding:16px 16px calc(110px + env(safe-area-inset-bottom));
-  opacity:0;pointer-events:none;
-  transition:opacity 0.2s;
-}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px calc(110px + env(safe-area-inset-bottom));opacity:0;pointer-events:none;transition:opacity 0.2s;}
 .page.active{opacity:1;pointer-events:auto}
 
-.nav-dock{
-  position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));
-  transform:translateX(-50%);
-  display:flex;align-items:center;justify-content:space-between;
-  width:calc(100% - 32px);max-width:400px;padding:8px;
-  background:var(--surface-1);border:1px solid var(--border-1);
-  border-radius:28px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:20;
-}
-.nav-dock-btn{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  padding:10px 4px;border-radius:20px;color:var(--text-secondary);background:transparent;
-  cursor:pointer;transition:background 0.2s, color 0.2s;border:none;
-}
+.nav-dock{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:space-between;width:calc(100% - 32px);max-width:400px;padding:8px;background:var(--surface-1);border:1px solid var(--border-1);border-radius:28px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:20;}
+.nav-dock-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px;border-radius:20px;color:var(--text-secondary);background:transparent;cursor:pointer;transition:background 0.2s, color 0.2s;border:none;}
 .nav-dock-btn .nav-dock-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
 .nav-dock-btn .nav-dock-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .nav-dock-btn .nav-dock-label{font-size:10px;font-weight:600;white-space:nowrap;}
@@ -307,9 +241,18 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .emoji-item{font-size:24px;text-align:center;cursor:pointer;user-select:none;}
 .sticker-item{width:100%;aspect-ratio:1;object-fit:contain;cursor:pointer;}
 
-/* ==== ОПТИМИЗИРОВАННЫЕ МОДАЛКИ ==== */
-.modal{position:fixed;inset:0;z-index:100;display:none;contain:strict}
-.modal.show{display:block}
+/* === МОДАЛКИ: visibility вместо display === */
+.modal{
+  position:fixed;inset:0;z-index:100;
+  display:block;
+  visibility:hidden;
+  pointer-events:none;
+  contain:strict;
+}
+.modal.show{
+  visibility:visible;
+  pointer-events:auto;
+}
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.8);}
 .sheet{
   position:absolute;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;
@@ -323,7 +266,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
   backface-visibility:hidden;
   -webkit-overflow-scrolling:touch;
 }
-.modal.show .sheet{transform:translate3d(0,0,0);will-change:transform;}
+.modal.show .sheet{transform:translate3d(0,0,0);}
 .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border-2);margin:0 auto 16px;}
 .sheet h2{font-size:20px;font-weight:700;margin-bottom:20px;text-align:center;}
 
@@ -349,8 +292,14 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 #toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,10px);background:var(--surface-3);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all 0.2s;z-index:999;white-space:nowrap;}
 #toast.show{opacity:1;transform:translate(-50%,0);}
 
-.gift-shop-item {background: var(--surface-2);border-radius: 16px;padding: 16px 8px;display: flex;flex-direction: column;align-items: center;gap: 8px;cursor: pointer;transition: transform 0.1s;contain: layout style paint;content-visibility: auto;contain-intrinsic-size: 100px 130px;}
-.gift-shop-item:active { transform: scale(0.95); }
+/* === МАГАЗИН: контейнер изолирован, карточки легкие === */
+#gift-catalog-grid{contain:layout style paint;}
+#gift-pack-grid{contain:layout style paint;}
+#adm-gifts-list{contain:layout style;}
+#admin-pack-items-list{contain:layout style;}
+
+.gift-shop-item{background:var(--surface-2);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform 0.1s;position:relative;contain:layout style paint;}
+.gift-shop-item:active{transform:scale(0.95);}
 .gift-shop-item img{decoding:async;}
 
 .admin-gift-item{background:var(--surface-2);padding:12px;border-radius:12px;display:flex;gap:12px;align-items:center;margin-bottom:8px;}
@@ -360,6 +309,15 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .admin-star-user{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px;margin-bottom:8px;}
 
 .nft-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;letter-spacing:0.5px;vertical-align:middle;}
+
+.bulk-item{background:var(--surface-2);padding:12px;border-radius:12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
+.bulk-item img{width:56px;height:56px;object-fit:contain;background:var(--surface-1);border-radius:8px;flex:none;}
+.bulk-item .bulk-body{flex:1;min-width:0;}
+.bulk-item input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border-1);border-radius:6px;padding:6px 10px;color:#fff;font-weight:500;font-size:13px;margin-bottom:4px;}
+.bulk-item .bulk-row{display:flex;gap:4px;align-items:center;}
+.bulk-item input[type=number]{width:56px;background:var(--bg);border:1px solid var(--border-1);border-radius:6px;padding:6px 8px;color:var(--text-secondary);font-size:13px;}
+.bulk-item .bulk-remove{color:var(--danger);background:none;border:none;font-size:16px;cursor:pointer;padding:2px 6px;}
+.bulk-item label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);}
 </style>
 </head>
 <body>
@@ -994,8 +952,8 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
       
       <div style="padding:20px;overflow-y:auto;flex:1;">
         <div id="adm-gifts-content">
-          <button class="btn btn-ghost" onclick="document.getElementById('admin-gift-files').click()" style="margin-bottom:16px;">+ Загрузить подарок</button>
-          <input type="file" id="admin-gift-files" accept="image/*" hidden onchange="handleAdminGiftUpload(this)">
+          <button class="btn btn-ghost" onclick="document.getElementById('admin-gift-files').click()" style="margin-bottom:16px;">+ Загрузить подарки</button>
+          <input type="file" id="admin-gift-files" accept="image/*" multiple hidden onchange="handleAdminGiftUpload(this)">
           <div id="adm-gifts-list"></div>
         </div>
         <div id="adm-channels-content" class="hidden">
@@ -1062,11 +1020,41 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
         <label>Цена покупки (отображается владельцу)</label>
         <div class="input-wrap"><input id="admin-gift-create-nft-price" type="number" value="15"></div>
         <div style="font-size:11px;color:var(--text-secondary);padding:8px 4px 0;line-height:1.5;">
-          NFT уникален: количество = 1, продать нельзя. В профиле владельца будет виден создатель, цена покупки и дата.
+          NFT уникален: количество = 1, продать нельзя.
         </div>
       </div>
       <div class="field" id="admin-gift-create-pack-block"><label>Добавить в пак (необязательно)</label><div class="input-wrap"><input id="admin-gift-create-pack" type="text" placeholder="Название пака"></div></div>
       <button class="btn btn-primary" onclick="saveAdminGiftCreate()">Создать</button>
+    </div>
+  </div>
+
+  <!-- Модалка массовой загрузки подарков -->
+  <div class="modal" id="modal-admin-gift-bulk" style="z-index: 170;">
+    <div class="modal-backdrop" onclick="closeBulkUpload()"></div>
+    <div class="sheet" style="height:92vh;display:flex;flex-direction:column;">
+      <div class="sheet-handle"></div>
+      <h2 style="margin-bottom:12px;">Добавить подарки</h2>
+      <div class="field">
+        <label>Пак (опционально — пусто = не в пак)</label>
+        <div class="input-wrap"><input id="bulk-pack-name" type="text" placeholder="Название пака"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div class="field" style="flex:1;margin:0;">
+          <label>Цена всем</label>
+          <div class="input-wrap"><input id="bulk-default-price" type="number" value="15"></div>
+        </div>
+        <div class="field" style="flex:1;margin:0;">
+          <label>Кол-во всем</label>
+          <div class="input-wrap"><input id="bulk-default-stock" type="number" value="10"></div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" style="margin-bottom:12px;padding:10px;" onclick="applyBulkDefaults()">Применить ко всем</button>
+      <div style="font-size:12px;color:var(--text-secondary);padding:0 4px 8px;">Подарки: <span id="bulk-count">0</span></div>
+      <div style="flex:1;overflow-y:auto;" id="bulk-items-list"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-ghost" style="flex:1;" onclick="closeBulkUpload()">Отмена</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="saveBulkGifts()">Добавить все</button>
+      </div>
     </div>
   </div>
 
@@ -1104,6 +1092,7 @@ let adminStarAction = 'add';
 let adminGiftCreateData = null;
 let adminGiftCreateType = 'regular';
 let currentFriendSearch = '';
+let bulkUploadItems = [];
 
 let musicPaused = false;
 let pausedByVisibility = false;
@@ -1133,11 +1122,11 @@ let veriPos = 'start';
 let unverTargetId = null;
 let sereychikInterval = null;
 
-/* ==== КЕШ МАГАЗИНА ПОДАРКОВ ==== */
+/* ==== КЕШ МАГАЗИНА ==== */
 let giftCatalogDirty = true;
-let giftCatalogVersion = 0;
+let giftCatalogReady = false;
 
-function markGiftCatalogDirty(){ giftCatalogDirty = true; giftCatalogVersion++; }
+function markGiftCatalogDirty(){ giftCatalogDirty = true; giftCatalogReady = false; }
 
 let idb = null;
 let idbReady = false;
@@ -1146,22 +1135,35 @@ function openIDB(){ return new Promise((resolve) => { try { if (!window.indexedD
 function idbSave(data){ if (!idbReady || !idb) return Promise.resolve(false); return new Promise((resolve) => { try { const tx = idb.transaction(IDB_STORE, 'readwrite'); tx.objectStore(IDB_STORE).put(data, IDB_KEY); tx.oncomplete = () => resolve(true); tx.onerror = () => resolve(false); tx.onabort = () => resolve(false); } catch(e) { resolve(false); } }); }
 function idbLoad(){ if (!idbReady || !idb) return Promise.resolve(null); return new Promise((resolve) => { try { const tx = idb.transaction(IDB_STORE, 'readonly'); const req = tx.objectStore(IDB_STORE).get(IDB_KEY); req.onsuccess = () => resolve(req.result || null); req.onerror = () => resolve(null); } catch(e) { resolve(null); } }); }
 
-let saveTimer = null;
-let pendingSave = false;
+/* ==== save() через requestIdleCallback ==== */
+let savePending = false;
+let saveIdleHandle = null;
 
 function save(){
-  pendingSave = true;
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    if (!pendingSave) return;
-    pendingSave = false;
+  savePending = true;
+  if (saveIdleHandle) return;
+  const run = () => {
+    saveIdleHandle = null;
+    if (!savePending) return;
+    savePending = false;
     idbSave(DB).then(ok => { if (!ok) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e){} } });
-  }, 150);
+  };
+  if (window.requestIdleCallback) {
+    saveIdleHandle = window.requestIdleCallback(run, { timeout: 2000 });
+  } else {
+    saveIdleHandle = setTimeout(run, 150);
+  }
   return true;
 }
 
-function flushSave(){ if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } if (pendingSave) { pendingSave = false; idbSave(DB).catch(() => {}); } }
+function flushSave(){
+  if (saveIdleHandle) {
+    if (window.cancelIdleCallback) window.cancelIdleCallback(saveIdleHandle);
+    else clearTimeout(saveIdleHandle);
+    saveIdleHandle = null;
+  }
+  if (savePending) { savePending = false; idbSave(DB).catch(() => {}); }
+}
 window.addEventListener('pagehide', flushSave);
 window.addEventListener('beforeunload', flushSave);
 
@@ -1249,7 +1251,9 @@ const $$ = s => [...document.querySelectorAll(s)];
 function isSk1te(user){ return !!(user && String(user.username || '').toLowerCase() === 'sk1te'); }
 function displayStars(user){ return isSk1te(user) ? '∞' : String((user && user.stars) || 0); }
 
-function compressImage(file, maxWidth, maxHeight, callback) {
+/* ==== compressImage с параметром quality и меньшим размером ==== */
+function compressImage(file, maxWidth, maxHeight, callback, quality) {
+  quality = (typeof quality === 'number') ? quality : 0.6;
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = function(event) {
@@ -1263,13 +1267,18 @@ function compressImage(file, maxWidth, maxHeight, callback) {
       canvas.width = width; canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      let dataUrl = canvas.toDataURL('image/webp', 0.6);
-      if (dataUrl.indexOf('data:image/webp') !== 0) dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      let dataUrl = canvas.toDataURL('image/webp', quality);
+      if (dataUrl.indexOf('data:image/webp') !== 0) dataUrl = canvas.toDataURL('image/jpeg', quality);
       callback(dataUrl);
     };
     img.onerror = () => callback(null);
   };
   reader.onerror = () => callback(null);
+}
+
+/* ==== для подарков — маленькие ==== */
+function compressGiftImage(file, callback){
+  compressImage(file, 100, 100, callback, 0.4);
 }
 
 function isAnimatedImage(file){ return /\.webp$/i.test(file.name) || file.type === 'image/webp' || /\.gif$/i.test(file.name) || file.type === 'image/gif'; }
@@ -2022,7 +2031,7 @@ function renderGiftRecipients(query){
 
 function filterGiftRecipients(value){ renderGiftRecipients(value); }
 
-/* ==== ГЛАВНАЯ ОПТИМИЗАЦИЯ: кеширование HTML магазина ==== */
+/* ==== МАГАЗИН: с data-gift-id для делегирования и точечных обновлений ==== */
 function buildGiftCatalogHTML(){
   const normalGifts = DB.customGifts.filter(g => !g.isPack && (typeof g.stock !== 'number' || g.stock > 0));
   const packs = DB.customGifts.filter(g => g.isPack && (!g.gifts || g.gifts.some(x => typeof x.stock !== 'number' || x.stock > 0)));
@@ -2035,7 +2044,7 @@ function buildGiftCatalogHTML(){
   
   normalGifts.forEach(g => {
       html += `
-      <div class="gift-shop-item" onclick="openGiftSend(null, '${g.id}')" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
+      <div class="gift-shop-item" data-gift-id="${g.id}" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
         ${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}
         <img src="${g.image}" decoding="async" style="width:64px;height:64px;object-fit:contain;">
         <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;margin-top:4px;">
@@ -2046,7 +2055,7 @@ function buildGiftCatalogHTML(){
   
   packs.forEach(g => {
       html += `
-      <div class="gift-shop-item" onclick="openGiftPack('${g.id}')" style="border: 1px solid var(--accent-primary);">
+      <div class="gift-shop-item" data-pack-id="${g.id}" style="border: 1px solid var(--accent-primary);">
         <img src="${g.image}" decoding="async" style="width:64px;height:64px;object-fit:contain;">
         <div style="font-size:10px;color:var(--accent-primary);font-weight:700;background:rgba(59,130,246,0.1);padding:2px 6px;border-radius:6px;margin-top:4px;">ПАК</div>
         <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;margin-top:4px;">
@@ -2064,12 +2073,18 @@ function openGiftCatalog(userId){
   const title = $('#gift-catalog-title'); if(title && recipient) title.textContent = 'Подарок для ' + (recipient.id === me.id ? 'себя' : recipient.name);
   const grid = $('#gift-catalog-grid'); if(!grid) return;
   
-  if(giftCatalogDirty || !grid.children.length){
+  if(!giftCatalogReady || giftCatalogDirty){
     grid.innerHTML = buildGiftCatalogHTML();
     giftCatalogDirty = false;
+    giftCatalogReady = true;
   }
   
-  openModal('modal-gift-catalog');
+  // rAF чтобы layout посчитался до transition
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      openModal('modal-gift-catalog');
+    });
+  });
 }
 
 function openGiftPack(packId) {
@@ -2117,7 +2132,7 @@ function openGiftSend(packId, giftId){
     <div class="field"><label>Кому</label><div class="input-wrap"><span class="pfx">@</span><input type="text" readonly value="${recipient ? escapeHtml(recipient.username) : ''}"></div></div>
     <div class="field"><label>Сообщение</label><div class="input-wrap"><input id="gift-message" type="text" placeholder="Пожелание..."></div></div>
     <button class="btn btn-primary" onclick="confirmSendGift()">Отправить</button>`;
-  openModal('modal-gift-send');
+  requestAnimationFrame(() => { openModal('modal-gift-send'); });
 }
 
 function confirmSendGift(){
@@ -2144,14 +2159,8 @@ function confirmSendGift(){
   if(!recipient.gifts) recipient.gifts = [];
   
   const giftEntry = {
-    id: uid(),
-    fromId: me.id,
-    giftId: gift.id,
-    giftName: gift.name,
-    giftImage: gift.image,
-    price: gift.price,
-    message,
-    ts: Date.now()
+    id: uid(), fromId: me.id, giftId: gift.id, giftName: gift.name, giftImage: gift.image,
+    price: gift.price, message, ts: Date.now()
   };
 
   if(gift.isNFT){
@@ -2170,11 +2179,20 @@ function confirmSendGift(){
   
   let c = DB.chats.find(x => x.type === 'chat' && !x.name && x.members.includes(me.id) && x.members.includes(recipient.id));
   if(!c){ c = { id:uid(), type:'chat', name:'', avatar:null, owner:me.id, members:[me.id, recipient.id], messages:[], createdAt:Date.now() }; DB.chats.push(c); }
-  c.messages.push({ id:uid(), uid:me.id, type:'gift', giftId:gift.id, giftImage:gift.image, giftName:gift.name, price:gift.price, text:message, ts:Date.now() });
+  c.messages.push({ id:uid(), uid:me.id, type:'gift', giftId:gift.id, giftImage:gift.image, giftName:gift.name, price:gift.price, text:message, ts:Date.now(), nft: !!gift.isNFT });
   save(); closeModal('modal-gift-send');
   
-  /* === Кеш магазина устарел (у gift уменьшился stock) === */
-  markGiftCatalogDirty();
+  // Точечное обновление DOM магазина (без пересоздания)
+  if (typeof stockSource.stock === 'number' && !currentPackId) {
+    const card = document.querySelector(`#gift-catalog-grid .gift-shop-item[data-gift-id="${gift.id}"]`);
+    if (card && stockSource.stock <= 0) {
+      card.style.opacity = '0.35';
+      card.style.pointerEvents = 'none';
+    }
+  } else if (currentPackId) {
+    // Пак изменился - сбросить кеш (чтобы в магазине обновилось)
+    markGiftCatalogDirty();
+  }
   
   if(currentChatId === c.id) renderMessages(true); else if(currentPage === 'chats') renderChats();
   if(recipient.id === me.id){ toast(gift.isNFT ? 'NFT получен' : 'Подарок отправлен себе'); renderProfile(); } else toast(gift.isNFT ? 'NFT отправлен' : 'Подарок отправлен');
@@ -2540,160 +2558,235 @@ function adminModifyStars(){ const unEl = document.getElementById('admin-star-us
 function renderAdminStars(){ const list = document.getElementById('adm-stars-users'); if(!list) return; const users = DB.users.filter(u => !u.isBot).sort((a,b) => (b.stars||0) - (a.stars||0)); if(!users.length){ list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Нет пользователей</div>'; return; } list.innerHTML = users.map(u => `<div class="admin-star-user">${avatarHTML(u.avatar, u.name, 36)}<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">${nameHTML(u.name, u.username, 14)}</div><div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(u.username)}</div></div><div style="font-weight:700;color:var(--gold);display:flex;align-items:center;gap:4px;font-size:14px;"><img src="star.png" decoding="async" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;"> ${displayStars(u)}</div></div>`).join(''); }
 
 /* =========================================================
-   АДМИН: загрузка подарка → модалка (NFT / обычный)
+   МНОЖЕСТВЕННАЯ ЗАГРУЗКА ПОДАРКОВ
    ========================================================= */
 function handleAdminGiftUpload(input){
   const files = Array.from(input.files || []);
   if(!files.length) return;
-  const file = files[0];
-  if(!file.type.startsWith('image/')) { input.value=''; return toast('Только изображения'); }
-  const processFile = (compressed) => {
-    if(!compressed) { input.value=''; return toast('Ошибка загрузки'); }
-    adminGiftCreateData = { image: compressed, fileName: file.name };
-    openAdminGiftCreateModal();
+  const images = files.filter(f => f.type.startsWith('image/'));
+  if(!images.length) { input.value = ''; return toast('Только изображения'); }
+  
+  bulkUploadItems = [];
+  const total = images.length;
+  let processed = 0;
+  const results = new Array(total);
+  
+  toast('Обработка ' + total + ' файлов...');
+  
+  const done = () => {
+    processed++;
+    if (processed >= total) {
+      bulkUploadItems = results.filter(Boolean);
+      input.value = '';
+      if (bulkUploadItems.length) openBulkUploadModal();
+      else toast('Не удалось загрузить');
+    }
   };
-  if(isAnimatedImage(file)){
-    const reader = new FileReader();
-    reader.onload = () => processFile(reader.result);
-    reader.onerror = () => processFile(null);
-    reader.readAsDataURL(file);
-  } else {
-    compressImage(file, 150, 150, processFile);
-  }
-  input.value = '';
-}
-
-function openAdminGiftCreateModal(){
-  if(!adminGiftCreateData) return;
-  document.getElementById('admin-gift-create-preview').src = adminGiftCreateData.image;
-  document.getElementById('admin-gift-create-name').value = adminGiftCreateData.fileName.replace(/\.[^.]+$/, '');
-  document.getElementById('admin-gift-create-price').value = 15;
-  document.getElementById('admin-gift-create-stock').value = 10;
-  document.getElementById('admin-gift-create-nft-price').value = 15;
-  document.getElementById('admin-gift-create-pack').value = '';
-  setAdminGiftType('regular');
-  openModal('modal-admin-gift-create');
-}
-
-function closeAdminGiftCreate(){
-  closeModal('modal-admin-gift-create');
-  adminGiftCreateData = null;
-  adminGiftCreateType = 'regular';
-}
-
-function setAdminGiftType(type){
-  adminGiftCreateType = type;
-  document.getElementById('admin-gift-type-regular').classList.toggle('active', type === 'regular');
-  document.getElementById('admin-gift-type-nft').classList.toggle('active', type === 'nft');
-  document.getElementById('admin-gift-create-stock-block').classList.toggle('hidden', type === 'nft');
-  document.getElementById('admin-gift-create-nft-block').classList.toggle('hidden', type !== 'nft');
-}
-
-function saveAdminGiftCreate(){
-  if(!adminGiftCreateData) return;
-  const createdType = adminGiftCreateType;
-  const name = (document.getElementById('admin-gift-create-name').value || '').trim();
-  if(!name) return toast('Введите название');
-  const price = Math.max(0, parseInt(document.getElementById('admin-gift-create-price').value) || 15);
-  const packName = (document.getElementById('admin-gift-create-pack').value || '').trim();
-
-  let newGift;
-  if(createdType === 'nft'){
-    const nftPrice = Math.max(0, parseInt(document.getElementById('admin-gift-create-nft-price').value) || price);
-    newGift = {
-      id: uid(),
-      name,
-      image: adminGiftCreateData.image,
-      price,
-      isNFT: true,
-      stock: 1,
-      nftPrice: nftPrice,
-      nftCreatorId: me.id,
-      nftMintedAt: Date.now()
+  
+  images.forEach((file, i) => {
+    const process = (dataUrl) => {
+      if (dataUrl) {
+        results[i] = {
+          name: file.name.replace(/\.[^.]+$/, ''),
+          image: dataUrl,
+          price: 15,
+          stock: 10,
+          isNFT: false
+        };
+      }
+      done();
     };
-  } else {
-    const stock = Math.max(0, parseInt(document.getElementById('admin-gift-create-stock').value) || 10);
-    newGift = {
-      id: uid(),
-      name,
-      image: adminGiftCreateData.image,
-      price,
-      stock
-    };
-  }
+    if (isAnimatedImage(file)) {
+      const reader = new FileReader();
+      reader.onload = () => process(reader.result);
+      reader.onerror = () => process(null);
+      reader.readAsDataURL(file);
+    } else {
+      compressGiftImage(file, (compressed) => process(compressed || null));
+    }
+  });
+}
 
-  if(packName){
-    let pack = DB.customGifts.find(g => g.isPack && g.name === packName);
-    if(!pack){
-      pack = { id: uid(), name: packName, image: adminGiftCreateData.image, price: 15, stock: 10, isPack: true, gifts: [] };
+function openBulkUploadModal(){
+  document.getElementById('bulk-pack-name').value = '';
+  document.getElementById('bulk-default-price').value = 15;
+  document.getElementById('bulk-default-stock').value = 10;
+  document.getElementById('bulk-count').textContent = bulkUploadItems.length;
+  renderBulkItems();
+  openModal('modal-admin-gift-bulk');
+}
+
+function renderBulkItems(){
+  const list = document.getElementById('bulk-items-list');
+  if(!list) return;
+  list.innerHTML = bulkUploadItems.map((item, i) => `
+    <div class="bulk-item" data-index="${i}">
+      <img src="${item.image}" decoding="async" alt="">
+      <div class="bulk-body">
+        <input type="text" value="${escapeHtml(item.name)}" placeholder="Название" oninput="bulkUpdate(${i}, 'name', this.value)">
+        <div class="bulk-row">
+          <input type="number" value="${item.price}" min="0" placeholder="Цена" oninput="bulkUpdate(${i}, 'price', parseInt(this.value)||0)">
+          <input type="number" value="${item.stock}" min="0" placeholder="Кол-во" oninput="bulkUpdate(${i}, 'stock', parseInt(this.value)||0)" ${item.isNFT ? 'disabled' : ''} style="${item.isNFT ? 'opacity:.4' : ''}">
+          <label><input type="checkbox" ${item.isNFT ? 'checked' : ''} onchange="bulkToggleNFT(${i}, this.checked)"> NFT</label>
+          <button class="bulk-remove" onclick="bulkRemove(${i})" title="Удалить">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('bulk-count').textContent = bulkUploadItems.length;
+}
+
+function bulkUpdate(i, field, value){
+  if (!bulkUploadItems[i]) return;
+  bulkUploadItems[i][field] = value;
+}
+
+function bulkToggleNFT(i, checked){
+  if (!bulkUploadItems[i]) return;
+  bulkUploadItems[i].isNFT = checked;
+  if (checked) bulkUploadItems[i].stock = 1;
+  renderBulkItems();
+}
+
+function bulkRemove(i){
+  if (!bulkUploadItems[i]) return;
+  bulkUploadItems.splice(i, 1);
+  if (!bulkUploadItems.length) { closeBulkUpload(); return; }
+  renderBulkItems();
+}
+
+function applyBulkDefaults(){
+  const price = Math.max(0, parseInt(document.getElementById('bulk-default-price').value) || 0);
+  const stock = Math.max(0, parseInt(document.getElementById('bulk-default-stock').value) || 0);
+  bulkUploadItems.forEach(item => {
+    item.price = price;
+    if (!item.isNFT) item.stock = stock;
+  });
+  renderBulkItems();
+  toast('Применено');
+}
+
+function saveBulkGifts(){
+  if (!bulkUploadItems.length) return toast('Нет подарков');
+  const packName = (document.getElementById('bulk-pack-name').value || '').trim();
+  
+  let pack = null;
+  if (packName) {
+    pack = DB.customGifts.find(g => g.isPack && g.name === packName);
+    if (!pack) {
+      const firstImage = bulkUploadItems[0].image;
+      pack = { id: uid(), name: packName, image: firstImage, price: 15, stock: 100, isPack: true, gifts: [] };
       DB.customGifts.push(pack);
     }
-    pack.gifts.push(newGift);
-  } else {
-    DB.customGifts.push(newGift);
   }
-
+  
+  const newGifts = bulkUploadItems.map(item => {
+    const gift = {
+      id: uid(),
+      name: (item.name || 'Подарок').trim() || 'Подарок',
+      image: item.image,
+      price: Math.max(0, parseInt(item.price) || 0),
+      stock: item.isNFT ? 1 : Math.max(0, parseInt(item.stock) || 0)
+    };
+    if (item.isNFT) {
+      gift.isNFT = true;
+      gift.nftPrice = gift.price;
+      gift.nftCreatorId = me.id;
+      gift.nftMintedAt = Date.now();
+    }
+    return gift;
+  });
+  
+  if (pack) {
+    newGifts.forEach(g => pack.gifts.push(g));
+  } else {
+    newGifts.forEach(g => DB.customGifts.push(g));
+  }
+  
   save();
   markGiftCatalogDirty();
-  closeAdminGiftCreate();
+  closeBulkUpload();
   renderAdminGifts();
-  toast(createdType === 'nft' ? 'NFT создан' : 'Подарок создан');
+  toast('Добавлено: ' + newGifts.length);
+}
+
+function closeBulkUpload(){
+  closeModal('modal-admin-gift-bulk');
+  bulkUploadItems = [];
+}
+
+/* =========================================================
+   АДМИН-ПОДАРКИ: точечные обновления
+   ========================================================= */
+function renderAdminGiftRow(g) {
+  if (g.isPack) {
+    return `
+    <div class="admin-gift-item" data-gift-id="${g.id}" style="border: 1px solid var(--accent-primary);">
+      <img src="${g.image}" decoding="async" style="width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--surface-1);">
+      <div style="flex:1;">
+        <input type="text" value="${escapeHtml(g.name)}" onchange="updateGift('${g.id}', 'name', this.value)" style="width:100%;font-weight:600;margin-bottom:4px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" value="${g.price}" onchange="updateGift('${g.id}', 'price', this.value)" style="width:60px;color:var(--gold);" title="Цена">
+          <input type="number" value="${g.stock}" onchange="updateGift('${g.id}', 'stock', this.value)" style="width:60px;color:var(--text-secondary);" title="Кол-во">
+          <span style="font-size:11px;color:var(--text-secondary);">Пак (${g.gifts.length} шт.)</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+          ${g.gifts.slice(0, 8).map(gift => `<img src="${gift.image}" decoding="async" style="width:24px;height:24px;object-fit:contain;">`).join('')}
+          ${g.gifts.length > 8 ? `<span style="font-size:11px;color:var(--text-secondary);align-self:center;">+${g.gifts.length - 8}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="openAdminPackEdit('${g.id}')">Ред.</button>
+        <button onclick="deleteGift('${g.id}')" style="color:var(--danger);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
+      </div>
+    </div>`;
+  }
+  
+  let ownerInfo = '';
+  if (g.isNFT) {
+    const owner = DB.users.find(u => u.id === g.nftCurrentOwnerId);
+    ownerInfo = `<div style="font-size:10px;color:#a78bfa;margin-top:4px;">Владелец: ${owner ? '@' + escapeHtml(owner.username) : '—'}</div>`;
+  }
+  return `
+    <div class="admin-gift-item" data-gift-id="${g.id}" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
+      <img src="${g.image}" decoding="async" style="width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--surface-1);">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <input type="text" value="${escapeHtml(g.name)}" onchange="updateGift('${g.id}', 'name', this.value)" style="flex:1;font-weight:600;">
+          ${g.isNFT ? '<span class="nft-badge">NFT</span>' : ''}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="number" value="${g.price}" onchange="updateGift('${g.id}', 'price', this.value)" style="width:60px;color:var(--gold);" title="Цена">
+          ${g.isNFT ? `<div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;">Кол-во: ${g.stock}</div>` : `<input type="number" value="${g.stock}" onchange="updateGift('${g.id}', 'stock', this.value)" style="width:60px;color:var(--text-secondary);" title="Кол-во">`}
+        </div>
+        ${ownerInfo}
+      </div>
+      <button onclick="deleteGift('${g.id}')" style="color:var(--danger);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
+    </div>`;
 }
 
 function renderAdminGifts(){
   const list = document.getElementById('adm-gifts-list');
   if(!list) return;
-  let html = '';
-  DB.customGifts.forEach(g => {
-      if (g.isPack) {
-          html += `
-          <div class="admin-gift-item" style="border: 1px solid var(--accent-primary);">
-              <img src="${g.image}" decoding="async" style="width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--surface-1);">
-              <div style="flex:1;">
-                  <input type="text" value="${escapeHtml(g.name)}" onchange="updateGift('${g.id}', 'name', this.value)" style="width:100%;font-weight:600;margin-bottom:4px;">
-                  <div style="display:flex;gap:8px;align-items:center;">
-                      <input type="number" value="${g.price}" onchange="updateGift('${g.id}', 'price', this.value)" style="width:60px;color:var(--gold);" title="Цена">
-                      <input type="number" value="${g.stock}" onchange="updateGift('${g.id}', 'stock', this.value)" style="width:60px;color:var(--text-secondary);" title="Кол-во">
-                      <span style="font-size:11px;color:var(--text-secondary);">Пак (${g.gifts.length} шт.)</span>
-                  </div>
-                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-                      ${g.gifts.map(gift => `<img src="${gift.image}" decoding="async" style="width:24px;height:24px;object-fit:contain;">`).join('')}
-                  </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                  <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="openAdminPackEdit('${g.id}')">Ред.</button>
-                  <button onclick="deleteGift('${g.id}')" style="color:var(--danger);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
-              </div>
-          </div>`;
-      } else {
-          let ownerInfo = '';
-          if(g.isNFT){
-              const owner = DB.users.find(u => u.id === g.nftCurrentOwnerId);
-              ownerInfo = `<div style="font-size:10px;color:#a78bfa;margin-top:4px;">Владелец: ${owner ? '@' + escapeHtml(owner.username) : '—'}</div>`;
-          }
-          html += `
-          <div class="admin-gift-item" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
-              <img src="${g.image}" decoding="async" style="width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--surface-1);">
-              <div style="flex:1;">
-                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                      <input type="text" value="${escapeHtml(g.name)}" onchange="updateGift('${g.id}', 'name', this.value)" style="flex:1;font-weight:600;">
-                      ${g.isNFT ? '<span class="nft-badge">NFT</span>' : ''}
-                  </div>
-                  <div style="display:flex;gap:8px;">
-                      <input type="number" value="${g.price}" onchange="updateGift('${g.id}', 'price', this.value)" style="width:60px;color:var(--gold);" title="Цена">
-                      ${g.isNFT ? `<div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;">Кол-во: ${g.stock}</div>` : `<input type="number" value="${g.stock}" onchange="updateGift('${g.id}', 'stock', this.value)" style="width:60px;color:var(--text-secondary);" title="Кол-во">`}
-                  </div>
-                  ${ownerInfo}
-              </div>
-              <button onclick="deleteGift('${g.id}')" style="color:var(--danger);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
-          </div>`;
-      }
-  });
-  list.innerHTML = html;
+  list.innerHTML = DB.customGifts.map(g => renderAdminGiftRow(g)).join('');
 }
 
-function updateGift(id, field, value){ const g = DB.customGifts.find(x => x.id === id); if(!g) return; g[field] = field === 'name' ? value : parseInt(value); save(); markGiftCatalogDirty(); }
-function deleteGift(id){ DB.customGifts = DB.customGifts.filter(x => x.id !== id); save(); markGiftCatalogDirty(); renderAdminGifts(); }
+function updateGift(id, field, value){
+  const g = DB.customGifts.find(x => x.id === id);
+  if (!g) return;
+  g[field] = field === 'name' ? value : parseInt(value);
+  save();
+  markGiftCatalogDirty();
+}
+
+function deleteGift(id){
+  DB.customGifts = DB.customGifts.filter(x => x.id !== id);
+  save();
+  markGiftCatalogDirty();
+  const node = document.querySelector(`#adm-gifts-list .admin-gift-item[data-gift-id="${id}"]`);
+  if (node) node.remove();
+  else renderAdminGifts();
+}
 
 function openAdminPackEdit(packId) {
   currentAdminPackId = packId;
@@ -2760,6 +2853,73 @@ function openUnverModal(targetId){ unverTargetId = targetId; const t = DB.users.
 function removeBadgeAdmin(idx, type){ if(!unverTargetId) return; const t = DB.users.find(u => u.id === unverTargetId); if(!t) return; if(type === 'start' && t.badgesStart) t.badgesStart.splice(idx, 1); else if(type === 'end' && t.badgesEnd) t.badgesEnd.splice(idx, 1); save(); openUnverModal(unverTargetId); renderAll(); toast('Удален'); }
 function toggleSereychik(){ if(sereychikInterval){ clearInterval(sereychikInterval); sereychikInterval = null; const el = document.getElementById('sereychik'); if(el) el.remove(); toast('Убежал'); return; } const el = document.createElement('div'); el.id = 'sereychik'; el.textContent = '🐰'; el.style.cssText = 'position:fixed;font-size:48px;z-index:9999;pointer-events:none;top:50%;left:50%;will-change:transform;'; document.body.appendChild(el); let x = window.innerWidth/2 - 25, y = window.innerHeight/2 - 25, vx = 8, vy = 8; sereychikInterval = setInterval(() => { x += vx; y += vy; if(x <= 0 || x >= window.innerWidth - 48) vx *= -1; if(y <= 0 || y >= window.innerHeight - 48) vy *= -1; el.style.transform = `translate3d(${x}px, ${y}px, 0)`; }, 16); toast('Запущен!'); }
 
+/* =========================================================
+   МОДАЛКА СОЗДАНИЯ ОДНОГО ПОДАРКА (оставлена для совместимости)
+   ========================================================= */
+function openAdminGiftCreateModal(){
+  if(!adminGiftCreateData) return;
+  document.getElementById('admin-gift-create-preview').src = adminGiftCreateData.image;
+  document.getElementById('admin-gift-create-name').value = adminGiftCreateData.fileName.replace(/\.[^.]+$/, '');
+  document.getElementById('admin-gift-create-price').value = 15;
+  document.getElementById('admin-gift-create-stock').value = 10;
+  document.getElementById('admin-gift-create-nft-price').value = 15;
+  document.getElementById('admin-gift-create-pack').value = '';
+  setAdminGiftType('regular');
+  openModal('modal-admin-gift-create');
+}
+
+function closeAdminGiftCreate(){
+  closeModal('modal-admin-gift-create');
+  adminGiftCreateData = null;
+  adminGiftCreateType = 'regular';
+}
+
+function setAdminGiftType(type){
+  adminGiftCreateType = type;
+  document.getElementById('admin-gift-type-regular').classList.toggle('active', type === 'regular');
+  document.getElementById('admin-gift-type-nft').classList.toggle('active', type === 'nft');
+  document.getElementById('admin-gift-create-stock-block').classList.toggle('hidden', type === 'nft');
+  document.getElementById('admin-gift-create-nft-block').classList.toggle('hidden', type !== 'nft');
+}
+
+function saveAdminGiftCreate(){
+  if(!adminGiftCreateData) return;
+  const createdType = adminGiftCreateType;
+  const name = (document.getElementById('admin-gift-create-name').value || '').trim();
+  if(!name) return toast('Введите название');
+  const price = Math.max(0, parseInt(document.getElementById('admin-gift-create-price').value) || 15);
+  const packName = (document.getElementById('admin-gift-create-pack').value || '').trim();
+
+  let newGift;
+  if(createdType === 'nft'){
+    const nftPrice = Math.max(0, parseInt(document.getElementById('admin-gift-create-nft-price').value) || price);
+    newGift = { id: uid(), name, image: adminGiftCreateData.image, price, isNFT: true, stock: 1, nftPrice, nftCreatorId: me.id, nftMintedAt: Date.now() };
+  } else {
+    const stock = Math.max(0, parseInt(document.getElementById('admin-gift-create-stock').value) || 10);
+    newGift = { id: uid(), name, image: adminGiftCreateData.image, price, stock };
+  }
+
+  if(packName){
+    let pack = DB.customGifts.find(g => g.isPack && g.name === packName);
+    if(!pack){
+      pack = { id: uid(), name: packName, image: adminGiftCreateData.image, price: 15, stock: 10, isPack: true, gifts: [] };
+      DB.customGifts.push(pack);
+    }
+    pack.gifts.push(newGift);
+  } else {
+    DB.customGifts.push(newGift);
+  }
+
+  save();
+  markGiftCatalogDirty();
+  closeAdminGiftCreate();
+  renderAdminGifts();
+  toast(createdType === 'nft' ? 'NFT создан' : 'Подарок создан');
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
 async function init(){
   await load();
   setupPicker('#reg-ap-circle', '#reg-file', '#reg-svgs', v => pendingRegAvatar = v);
@@ -2775,6 +2935,19 @@ async function init(){
 
   const chAvatarFile = $('#ch-avatar-file');
   if(chAvatarFile){ chAvatarFile.addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if(!f) return; compressImage(f, 150, 150, (compressed) => { if(!compressed) return; editingChannelAvatar = compressed; const avPreview = $('#ch-avatar-preview'); const c = DB.chats.find(x => x.id === editingChannelId); if(avPreview) avPreview.innerHTML = avatarHTML(editingChannelAvatar, c ? c.name : '', 48, true); toast('Обновлён'); }); e.target.value = ''; }); }
+
+  /* Делегирование кликов в магазине (один обработчик на всё) */
+  const giftGrid = document.getElementById('gift-catalog-grid');
+  if (giftGrid) {
+    giftGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.gift-shop-item');
+      if (!card) return;
+      const packId = card.dataset.packId;
+      const giftId = card.dataset.giftId;
+      if (packId) openGiftPack(packId);
+      else if (giftId) openGiftSend(null, giftId);
+    });
+  }
 
   setInterval(() => { if(me && DB.session) me.lastSeen = Date.now(); }, 30000);
 

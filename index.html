@@ -9,71 +9,37 @@
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.4.4.min.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-
 :root{
-  --bg:           #09090b;
-  --surface-1:    #18181b;
-  --surface-2:    #27272a;
-  --surface-3:    #3f3f46;
-  --border-1:     #27272a;
-  --border-2:     #3f3f46;
-  --text-primary: #fafafa;
-  --text-secondary:#a1a1aa;
-  --text-tertiary: #71717a;
-  --accent-primary:#3b82f6;
-  --accent-secondary:#ec4899;
-  --success:      #10b981;
-  --warning:      #f59e0b;
-  --danger:       #ef4444;
-  --gold:         #fbbf24;
+  --bg:#09090b;--surface-1:#18181b;--surface-2:#27272a;--surface-3:#3f3f46;
+  --border-1:#27272a;--border-2:#3f3f46;--text-primary:#fafafa;--text-secondary:#a1a1aa;
+  --text-tertiary:#71717a;--accent-primary:#3b82f6;--accent-secondary:#ec4899;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;--gold:#fbbf24;
   --radius-sm:12px;--radius-md:16px;--radius-lg:24px;--radius-pill:999px;
-  --ease-out:cubic-bezier(0.16, 1, 0.3, 1);
-  color-scheme:dark;
+  --ease-out:cubic-bezier(0.16, 1, 0.3, 1);color-scheme:dark;
 }
-
 html,body{height:100%}
-
-body{
-  font-family:-apple-system,BlinkMacSystemFont,'Inter','SF Pro Display','Segoe UI',Roboto,sans-serif;
-  background:#000;color:var(--text-primary);
-  overflow:hidden;display:flex;align-items:center;justify-content:center;
-  height:100vh;height:100dvh;
-  -webkit-font-smoothing:antialiased;
-}
-
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter','SF Pro Display','Segoe UI',Roboto,sans-serif;background:#000;color:var(--text-primary);overflow:hidden;display:flex;align-items:center;justify-content:center;height:100vh;height:100dvh;-webkit-font-smoothing:antialiased;}
 ::-webkit-scrollbar{width:0;height:0}
 input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:none;border:none;background:none}
-
 #app{position:relative;width:100%;max-width:440px;height:100vh;height:100dvh;background:var(--bg);overflow:hidden;}
-
 @media(min-width:520px){#app{height:min(900px,100dvh);border-radius:32px;box-shadow:0 0 0 1px var(--border-1)}}
-
-.screen{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  opacity:0;transform:translateX(20px);pointer-events:none;
-  transition:opacity 0.2s, transform 0.2s;
-  z-index:1;background:var(--bg);
-}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transform:translateX(20px);pointer-events:none;transition:opacity 0.2s, transform 0.2s;z-index:1;background:var(--bg);}
 .screen.active{opacity:1;transform:none;pointer-events:auto;z-index:2}
-
 #scr-splash{align-items:center;justify-content:center;}
 .splash{display:flex;flex-direction:column;align-items:center;gap:20px}
 .splash-logo{width:100px;height:100px;border-radius:28px;display:flex;align-items:center;justify-content:center;background:var(--accent-primary);overflow:hidden;}
 .splash-logo img{width:100%;height:100%;object-fit:cover}
 .splash-name{font-size:32px;font-weight:800;letter-spacing:-1px}
 .splash-sub{font-size:12px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;font-weight:600}
-
 #scr-auth{overflow-y:auto;padding:calc(40px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom))}
 .auth-head{text-align:center;margin-bottom:32px}
 .auth-logo{width:72px;height:72px;border-radius:20px;margin:0 auto 16px;background:var(--accent-primary);overflow:hidden;}
 .auth-logo img{width:100%;height:100%;object-fit:cover}
 .auth-head h1{font-size:24px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
 .auth-head p{font-size:14px;color:var(--text-secondary)}
-
 .auth-tabs{display:flex;background:var(--surface-1);border-radius:var(--radius-md);padding:4px;margin-bottom:24px;}
 .auth-tab{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
 .auth-tab.active{background:var(--surface-3);color:var(--text-primary)}
-
 .field{margin-bottom:16px}
 .field label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding-left:4px;font-weight:500;}
 .input-wrap{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--border-1);border-radius:var(--radius-md);padding:0 16px;transition:border-color 0.2s;}
@@ -82,14 +48,12 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .input-wrap .pfx svg{width:18px;height:18px}
 .input-wrap input{flex:1;padding:16px 0;background:none;font-size:15px;color:var(--text-primary);min-width:0;}
 .input-wrap input::placeholder{color:var(--text-tertiary)}
-
 .btn{width:100%;padding:16px;border-radius:var(--radius-md);font-size:15px;font-weight:600;cursor:pointer;transition:opacity 0.2s, transform 0.1s;user-select:none;}
 .btn:active{transform:scale(0.98)}
 .btn-primary{background:var(--text-primary);color:var(--bg);}
 .btn-ghost{background:var(--surface-1);color:var(--text-primary);border:1px solid var(--border-1);}
 .btn-danger{background:rgba(239, 68, 68, 0.1);color:var(--danger);}
 .hidden{display:none!important}
-
 .avatar-picker{display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:24px}
 .ap-circle{width:90px;height:90px;border-radius:50%;background:var(--surface-1);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:border-color 0.2s;}
 .ap-circle.has{border:none}
@@ -97,7 +61,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .ap-svgs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;width:100%;max-width:280px}
 .ap-svg{aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--surface-1);cursor:pointer;border:none;padding:0;}
 .ap-svg svg{width:100%;height:100%}
-
 .app-header{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;position:relative;z-index:6;flex:none;background:var(--bg);border-bottom:1px solid var(--border-1);}
 .header-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;cursor:pointer;}
 .header-avatar .av{width:100%!important;height:100%!important;font-size:16px!important}
@@ -107,11 +70,9 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .icon-btn{width:40px;height:40px;border-radius:12px;background:var(--surface-1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-primary);transition:background 0.2s;}
 .icon-btn:active{background:var(--surface-2)}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-
 .pages{position:relative;flex:1;overflow:hidden}
 .page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px calc(110px + env(safe-area-inset-bottom));opacity:0;pointer-events:none;transition:opacity 0.2s;}
 .page.active{opacity:1;pointer-events:auto}
-
 .nav-dock{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:space-between;width:calc(100% - 32px);max-width:400px;padding:8px;background:var(--surface-1);border:1px solid var(--border-1);border-radius:28px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:20;}
 .nav-dock-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px;border-radius:20px;color:var(--text-secondary);background:transparent;cursor:pointer;transition:background 0.2s, color 0.2s;border:none;}
 .nav-dock-btn .nav-dock-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
@@ -119,20 +80,16 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .nav-dock-btn .nav-dock-label{font-size:10px;font-weight:600;white-space:nowrap;}
 .nav-dock-btn:active{opacity:0.7}
 .nav-dock-btn.active{background:var(--surface-2);color:var(--accent-primary);}
-
 .group{background:var(--surface-1);border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;}
 .list-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.1s;user-select:none;}
 .list-item:active{background:var(--surface-2)}
 .group .list-item + .list-item{border-top:1px solid var(--border-1)}
-
 .av{display:flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex:none;font-weight:600;color:#fff;background:var(--surface-3);position:relative;}
 .av img{width:100%;height:100%;object-fit:cover}
 .av > svg{width:100%;height:100%}
 .av.sq{border-radius:16px}
-
 .av-wrap{position:relative;display:inline-flex;flex:none;}
 .av-wrap .online-dot{position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:var(--success);border:2px solid var(--surface-1);}
-
 .li-main{flex:1;min-width:0}
 .li-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:2px}
 .li-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;}
@@ -140,51 +97,24 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .li-bottom{display:flex;align-items:center;gap:6px}
 .li-preview{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
 .li-status{font-size:11px;color:var(--text-secondary);flex:none;}
-
 .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;background:var(--surface-2);color:var(--accent-primary);flex:none;}
 .section-title{font-size:12px;font-weight:600;color:var(--text-secondary);padding:16px 4px 8px;}
 .verify{display:inline-block;vertical-align:middle;margin-left:4px;object-fit:contain;border-radius:50%;flex:none;}
-
 .profile-banner{position:relative;width:100%;aspect-ratio:16/9;border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;background:var(--surface-1);}
 .profile-banner img,.profile-banner video{width:100%;height:100%;object-fit:cover}
 .profile-banner .banner-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;font-weight:500;flex-direction:column;gap:8px;}
 .profile-banner .banner-empty svg{width:32px;height:32px;stroke:currentColor;fill:none;}
-
 .profile-card{background:var(--surface-1);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:16px;}
-
-/* === АВАТАРКА С ПОДАРКАМИ ВОКРУГ === */
-.avatar-with-gifts{
-  position:relative;
-  width:200px;
-  height:200px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto;
-}
-.avatar-with-gifts .core-avatar{
-  position:relative;
-  z-index:2;
-}
-.gift-frame-item{
-  position:absolute;
-  width:32px;
-  height:32px;
-  object-fit:contain;
-  z-index:3;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-  cursor:pointer;
-  transition:transform 0.15s;
-}
+.avatar-with-gifts{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;margin:0 auto;}
+.avatar-with-gifts .core-avatar{position:relative;z-index:2;}
+.gift-frame-item{position:absolute;width:32px;height:32px;object-fit:contain;z-index:3;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));cursor:pointer;transition:transform 0.15s;}
 .gift-frame-item:hover{transform:scale(1.15);}
-
 .p-name{font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;}
 .p-username{font-size:14px;color:var(--accent-primary);font-weight:500;}
 .p-stats{display:flex;gap:24px;margin-top:8px;}
 .p-stat{text-align:center}
 .p-stat b{display:block;font-size:18px;font-weight:700;}
 .p-stat span{font-size:11px;color:var(--text-secondary);}
-
 .cell{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:56px;font-size:15px;}
 .cell + .cell{border-top:1px solid var(--border-1)}
 .cell.cell-action{cursor:pointer;}
@@ -195,7 +125,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .cell-value{margin-left:auto;font-size:14px;color:var(--text-secondary);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;}
 .cell-arrow{margin-left:auto;display:flex;align-items:center;color:var(--text-secondary);}
 .cell-arrow svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;}
-
 .settings-head{display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:8px;}
 .settings-phone{font-size:20px;font-weight:700;}
 .settings-username{font-size:14px;font-weight:500;color:var(--accent-primary);}
@@ -208,7 +137,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .settings-tab .tab-label{flex:1;text-align:left;font-size:15px;font-weight:500;}
 .settings-tab .tab-chev{color:var(--text-tertiary);}
 .settings-tab .tab-chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;}
-
 #scr-chat{background:var(--bg);z-index:20}
 .chat-header{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;border-bottom:1px solid var(--border-1);background:var(--bg);flex:none;z-index:3;}
 .chat-header .li-main{flex:1;min-width:0}
@@ -216,7 +144,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .back-btn{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-primary);flex:none;background:var(--surface-1);}
 .back-btn:active{background:var(--surface-2)}
 .back-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;}
-
 .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;}
 .msg{display:flex;flex-direction:column;max-width:85%;align-items:flex-start;}
 .msg.mine{align-self:flex-end;align-items:flex-end;}
@@ -226,27 +153,22 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .msg:not(.mine) .bubble{border-bottom-left-radius:4px}
 .msg.mine .bubble{border-bottom-right-radius:4px}
 .msg-time{font-size:10px;color:var(--text-tertiary);margin:4px 8px 0;}
-
 .msg.gift-msg{align-self:center!important;align-items:center!important;max-width:100%!important}
 .gift-bubble{background:var(--surface-1)!important;border:1px solid var(--border-1)!important;display:flex;flex-direction:column;align-items:center;padding:16px!important;width:240px;max-width:100%;border-radius:20px!important;}
 .gift-bubble-img{width:72px;height:72px;object-fit:contain;margin-bottom:8px;}
 .gift-bubble-title{font-weight:700;font-size:15px;color:var(--text-primary);text-align:center;}
 .gift-bubble-text{font-size:13px;color:var(--text-secondary);margin-top:4px;text-align:center;}
 .gift-bubble-hint{font-size:11px;color:var(--text-tertiary);margin-top:12px;text-align:center;border-top:1px solid var(--border-1);padding-top:12px;width:100%;}
-
 .file-bubble{display:flex;align-items:center;gap:12px;min-width:200px;}
 .file-icon{font-size:24px}
 .file-info{flex:1;min-width:0}
 .file-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .file-size{font-size:11px;color:var(--text-secondary);}
 .file-download{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;}
-
 .msg.sticker-msg{align-self:flex-start;background:transparent;border:none;padding:0;}
 .sticker-img{width:140px;height:140px;object-fit:contain;}
 .sticker-name{font-size:11px;color:var(--text-secondary);margin-top:4px;text-align:center;}
-
 .empty-chat{margin:auto;text-align:center;color:var(--text-secondary);font-size:14px;padding:24px;line-height:1.6;}
-
 .chat-bottom{flex:none;background:var(--bg);border-top:1px solid var(--border-1);}
 .bot-panel{display:none;padding:16px 16px 0;}
 .bot-panel.show{display:block;}
@@ -259,7 +181,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .send-btn{width:44px;height:44px;border-radius:12px;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;color:#fff;}
 .send-btn:active{opacity:0.8}
 .send-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;}
-
 .emoji-panel{position:absolute;bottom:100%;left:0;right:0;height:280px;background:var(--surface-1);border-top:1px solid var(--border-1);border-radius:20px 20px 0 0;display:none;flex-direction:column;z-index:10;box-shadow:0 -10px 30px rgba(0,0,0,0.5);}
 .emoji-panel.show{display:flex;}
 .emoji-tabs{display:flex;border-bottom:1px solid var(--border-1);}
@@ -268,7 +189,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .emoji-content{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-content:start;}
 .emoji-item{font-size:24px;text-align:center;cursor:pointer;user-select:none;}
 .sticker-item{width:100%;aspect-ratio:1;object-fit:contain;cursor:pointer;}
-
 .modal{position:fixed;inset:0;z-index:100;display:block;visibility:hidden;pointer-events:none;contain:strict;}
 .modal.show{visibility:visible;pointer-events:auto;}
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.8);}
@@ -276,11 +196,9 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .modal.show .sheet{transform:translate3d(0,0,0);}
 .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border-2);margin:0 auto 16px;}
 .sheet h2{font-size:20px;font-weight:700;margin-bottom:20px;text-align:center;}
-
 .segmented{display:flex;background:var(--surface-2);border-radius:var(--radius-md);padding:4px;margin-bottom:16px;}
-.segmented button{flex:1;padding:10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
+.segmented button{flex:1;padding:10px 6px;border-radius:12px;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
 .segmented button.active{background:var(--surface-3);color:var(--text-primary);}
-
 .friend-check{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;border:1px solid transparent;}
 .friend-check:active{background:var(--surface-2)}
 .friend-check.on{background:rgba(59, 130, 246, 0.1);border-color:var(--accent-primary);}
@@ -289,33 +207,26 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .friend-check .check svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:3;opacity:0;}
 .friend-check.on .check svg{opacity:1;}
 .scroll-area{max-height:260px;overflow-y:auto;}
-
 .selector-list{display:flex;flex-direction:column;gap:8px;}
 .selector-option{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:var(--surface-2);cursor:pointer;font-size:14px;font-weight:500;}
 .selector-option.active{background:rgba(59, 130, 246, 0.1);color:var(--accent-primary);}
 .selector-option svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;opacity:0;}
 .selector-option.active svg{opacity:1;}
-
 #toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,10px);background:var(--surface-3);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all 0.2s;z-index:999;white-space:nowrap;}
 #toast.show{opacity:1;transform:translate(-50%,0);}
-
 #gift-catalog-grid{contain:layout style paint;}
 #gift-pack-grid{contain:layout style paint;}
 #adm-gifts-list{contain:layout style;}
 #admin-pack-items-list{contain:layout style;}
-
 .gift-shop-item{background:var(--surface-2);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform 0.1s;position:relative;contain:layout style paint;}
 .gift-shop-item:active{transform:scale(0.95);}
 .gift-shop-item img{decoding:async;}
-
 .admin-gift-item{background:var(--surface-2);padding:12px;border-radius:12px;display:flex;gap:12px;align-items:center;margin-bottom:8px;}
 .admin-gift-item input{background:var(--bg);border:1px solid var(--border-1);border-radius:6px;padding:6px 10px;color:#fff;font-weight:500;font-size:13px;}
 .admin-stars-balance{display:flex;align-items:center;gap:16px;padding:20px;background:var(--surface-2);border-radius:16px;margin-bottom:16px;}
 .admin-stars-icon{width:56px;height:56px;border-radius:16px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#000;}
 .admin-star-user{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px;margin-bottom:8px;}
-
 .nft-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;letter-spacing:0.5px;vertical-align:middle;}
-
 .bulk-item{background:var(--surface-2);padding:12px;border-radius:12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
 .bulk-item img{width:56px;height:56px;object-fit:contain;background:var(--surface-1);border-radius:8px;flex:none;}
 .bulk-item .bulk-body{flex:1;min-width:0;}
@@ -324,12 +235,10 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .bulk-item input[type=number]{width:56px;background:var(--bg);border:1px solid var(--border-1);border-radius:6px;padding:6px 8px;color:var(--text-secondary);font-size:13px;}
 .bulk-item .bulk-remove{color:var(--danger);background:none;border:none;font-size:16px;cursor:pointer;padding:2px 6px;}
 .bulk-item label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);}
-
 .remote-tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:#10b981;margin-left:4px;vertical-align:middle;}
-
-/* Кнопки действий с подарком */
 .gift-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
 .gift-actions .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;}
+.adm-badge-cell{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px;margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -581,7 +490,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
     </div>
   </div>
 
-  <!-- НОВАЯ МОДАЛКА: передача подарка -->
   <div class="modal" id="modal-gift-transfer" style="z-index:180;">
     <div class="modal-backdrop" onclick="closeModal('modal-gift-transfer')"></div>
     <div class="sheet">
@@ -822,7 +730,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
     </div>
   </div>
 
-  <div class="modal" id="modal-code-login">
+  <div class="modal" id="modal-code-login" style="z-index:250;">
     <div class="modal-backdrop"></div>
     <div class="sheet" style="background:var(--bg);height:100vh;border-radius:0;display:flex;flex-direction:column;justify-content:center;align-items:center;">
       <h2 style="margin-bottom:24px;">Код-пароль</h2>
@@ -928,7 +836,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
     </div>
   </div>
 
-  <div class="modal" id="modal-set-badge">
+  <div class="modal" id="modal-set-badge" style="z-index:150;">
     <div class="modal-backdrop" onclick="closeModal('modal-set-badge')"></div>
     <div class="sheet">
       <div class="sheet-handle"></div>
@@ -970,6 +878,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
         <button id="adm-tab-gifts" class="active" onclick="switchAdminTab('gifts')">Подарки</button>
         <button id="adm-tab-channels" onclick="switchAdminTab('channels')">Каналы</button>
         <button id="adm-tab-stars" onclick="switchAdminTab('stars')">Звёзды</button>
+        <button id="adm-tab-badges" onclick="switchAdminTab('badges')">Значки</button>
       </div>
       
       <div style="padding:20px;overflow-y:auto;flex:1;">
@@ -1008,6 +917,31 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
           </div>
           <div class="section-title">Пользователи</div>
           <div id="adm-stars-users"></div>
+        </div>
+        <!-- НОВАЯ ВКЛАДКА: ЗНАЧКИ -->
+        <div id="adm-badges-content" class="hidden">
+          <div style="background:var(--surface-2);border-radius:16px;padding:16px;margin-bottom:16px;">
+            <div class="field" style="margin-bottom:12px;">
+              <label>Кому выдать</label>
+              <div class="input-wrap"><span class="pfx">@</span><input id="adm-badge-username" type="text" placeholder="username"></div>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label>Позиция</label>
+              <div class="segmented" id="adm-badge-pos" style="margin:0;">
+                <button class="active" onclick="setAdminBadgePos('start')">В начало</button>
+                <button onclick="setAdminBadgePos('end')">В конец</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <button class="btn btn-ghost" style="flex:1;padding:12px;" onclick="admGiveDefaultBadge()">L.png (по умолч.)</button>
+              <button class="btn btn-ghost" style="flex:1;padding:12px;" onclick="document.getElementById('adm-badge-file').click()">Свой значок</button>
+            </div>
+            <input type="file" id="adm-badge-file" accept="image/*" hidden onchange="admHandleBadgeFile(this)">
+            <div id="adm-badge-preview" style="text-align:center;margin-bottom:12px;min-height:50px;display:flex;align-items:center;justify-content:center;"></div>
+            <button class="btn btn-primary" onclick="admGiveBadge()">Выдать значок</button>
+          </div>
+          <div class="section-title">Пользователи со значками</div>
+          <div id="adm-badges-users"></div>
         </div>
       </div>
     </div>
@@ -1099,16 +1033,6 @@ let pubnubReady = false;
 let profileBroadcastInterval = null;
 let globalUsersCache = {};
 
-/* =========================================================
-   БАЗА ДАННЫХ
-   ========================================================= */
-const STORAGE_KEY = 'lipogram_messenger_v3';
-const IDB_NAME = 'lipogram_db_v1';
-const IDB_STORE = 'main';
-const IDB_KEY = 'state';
-const BOT_ID = 'number_code_bot';
-const STICKERS_BOT_ID = 'stickers_bot';
-
 let DB = { users: [], chats: [], session: null, customGifts: [] };
 let me = null;
 let currentChatId = null;
@@ -1130,6 +1054,10 @@ let adminGiftCreateData = null;
 let adminGiftCreateType = 'regular';
 let currentFriendSearch = '';
 let bulkUploadItems = [];
+
+/* ==== ADMIN BADGES ==== */
+let adminBadgePos = 'start';
+let adminBadgeData = 'L.png';
 
 let musicPaused = false;
 let pausedByVisibility = false;
@@ -1159,18 +1087,27 @@ let veriPos = 'start';
 let unverTargetId = null;
 let sereychikInterval = null;
 
+let appLocked = false;
+let veriChatContext = null;
+
 let giftCatalogDirty = true;
 let giftCatalogReady = false;
 function markGiftCatalogDirty(){ giftCatalogDirty = true; giftCatalogReady = false; }
 
-/* ==== ТРОТТЛИНГ BROADCAST (не более 1 раза в 10 сек) ==== */
 let lastBroadcastTs = 0;
 
 let idb = null;
 let idbReady = false;
 
+const STORAGE_KEY = 'lipogram_messenger_v3';
+const IDB_NAME = 'lipogram_db_v1';
+const IDB_STORE = 'main';
+const IDB_KEY = 'state';
+const BOT_ID = 'number_code_bot';
+const STICKERS_BOT_ID = 'stickers_bot';
+
 /* =========================================================
-   PUBNUB: ИНИЦИАЛИЗАЦИЯ
+   PUBNUB
    ========================================================= */
 function destroyPubNub() {
   if (profileBroadcastInterval) { clearInterval(profileBroadcastInterval); profileBroadcastInterval = null; }
@@ -1200,7 +1137,7 @@ function initPubNub() {
       message: handlePubNubMessage,
       presence: handlePubNubPresence,
       status: (s) => {
-        if (s.category === 'PNConnectedCategory') { pubnubReady = true; console.log('[PubNub] connected'); }
+        if (s.category === 'PNConnectedCategory') { pubnubReady = true; }
         if (s.category === 'PNNetworkIssuesCategory') { console.warn('[PubNub] network'); }
       }
     });
@@ -1230,7 +1167,7 @@ function initPubNub() {
   }
 }
 
-/* FIX: broadcastProfile теперь передаёт badges/profileGifts/stars */
+/* FIX: broadcast профиля с badgesStart/badgesEnd */
 function broadcastProfile() {
   if (!pubnub || !me) return;
   pubnub.publish({
@@ -1244,16 +1181,13 @@ function broadcastProfile() {
       about: me.about || '',
       badgesStart: me.badgesStart || [],
       badgesEnd: me.badgesEnd || [],
-      profileGifts: me.profileGifts || [],
-      stars: (typeof me.stars === 'number') ? me.stars : 0,
       lastSeen: Date.now()
     },
     storeInHistory: true
   }, (s) => { if (s.error) console.warn('[PubNub] publish profile', s); });
 }
 
-/* FIX: трансляция чужого профиля (при выдаче галочки кому-то).
-   force=true — чтобы сам получатель не проигнорировал broadcast. */
+/* FIX: broadcast чужого профиля (для админ-панели) */
 function broadcastUserProfile(user, force) {
   if (!pubnub || !user) return;
   pubnub.publish({
@@ -1267,8 +1201,6 @@ function broadcastUserProfile(user, force) {
       about: user.about || '',
       badgesStart: user.badgesStart || [],
       badgesEnd: user.badgesEnd || [],
-      profileGifts: user.profileGifts || [],
-      stars: (typeof user.stars === 'number') ? user.stars : 0,
       lastSeen: user.lastSeen || Date.now(),
       force: !!force
     },
@@ -1276,11 +1208,17 @@ function broadcastUserProfile(user, force) {
   }, (s) => { if (s.error) console.warn('[PubNub] publish user profile', s); });
 }
 
-/* FIX: обрабатываем force=true даже для себя; обновляем badges/profileGifts в кэше и DB */
+/* FIX: обрабатываем badges + @always всегда с L.png */
 function handleProfileBroadcast(data) {
   if (!data || !data.id) return;
   const isMe = !!(me && data.id === me.id);
   if (isMe && !data.force) return;
+
+  // @always всегда с L.png
+  if (String(data.username || '').toLowerCase() === 'always') {
+    if (!Array.isArray(data.badgesStart)) data.badgesStart = [];
+    if (!data.badgesStart.includes('L.png')) data.badgesStart.unshift('L.png');
+  }
 
   const existing = globalUsersCache[data.id] || {};
   globalUsersCache[data.id] = {
@@ -1289,10 +1227,8 @@ function handleProfileBroadcast(data) {
     name: data.name || existing.name || 'User',
     avatar: data.avatar || existing.avatar || null,
     about: (data.about !== undefined) ? data.about : (existing.about || ''),
-    badgesStart: Array.isArray(data.badgesStart) ? data.badgesStart : (existing.badgesStart || []),
-    badgesEnd: Array.isArray(data.badgesEnd) ? data.badgesEnd : (existing.badgesEnd || []),
-    profileGifts: Array.isArray(data.profileGifts) ? data.profileGifts : (existing.profileGifts || []),
-    stars: (typeof data.stars === 'number') ? data.stars : existing.stars,
+    badgesStart: Array.isArray(data.badgesStart) ? data.badgesStart.slice() : (existing.badgesStart || []),
+    badgesEnd: Array.isArray(data.badgesEnd) ? data.badgesEnd.slice() : (existing.badgesEnd || []),
     lastSeen: data.lastSeen || Date.now(),
     _online: true
   };
@@ -1303,10 +1239,12 @@ function handleProfileBroadcast(data) {
     if (data.name) local.name = data.name;
     if (data.avatar) local.avatar = data.avatar;
     if (data.about !== undefined) local.about = data.about;
-    if (Array.isArray(data.badgesStart)) local.badgesStart = data.badgesStart;
-    if (Array.isArray(data.badgesEnd)) local.badgesEnd = data.badgesEnd;
-    if (Array.isArray(data.profileGifts)) local.profileGifts = data.profileGifts;
-    if (typeof data.stars === 'number' && local.id !== BOT_ID && local.id !== STICKERS_BOT_ID) local.stars = data.stars;
+    if (Array.isArray(data.badgesStart)) local.badgesStart = data.badgesStart.slice();
+    if (Array.isArray(data.badgesEnd)) local.badgesEnd = data.badgesEnd.slice();
+    if (String(local.username).toLowerCase() === 'always') {
+      if (!Array.isArray(local.badgesStart)) local.badgesStart = [];
+      if (!local.badgesStart.includes('L.png')) local.badgesStart.unshift('L.png');
+    }
   }
 
   if (isMe) {
@@ -1473,7 +1411,7 @@ function publishChannelMessage(chat, message) {
   }, (s) => { if (s.error) console.warn('[PubNub] publish channel', s); });
 }
 
-/* FIX: копируем badges/profileGifts/stars из globalUsersCache */
+/* FIX: копируем badges из кэша */
 function ensureLocalUser(userId, fallback) {
   if (!userId) return null;
   let u = DB.users.find(x => x.id === userId);
@@ -1489,9 +1427,7 @@ function ensureLocalUser(userId, fallback) {
       avatar: g.avatar || null,
       about: g.about || '',
       phone: '', birthday: '',
-      friends: [], gifts: [],
-      profileGifts: Array.isArray(g.profileGifts) ? g.profileGifts.slice() : [],
-      stars: (typeof g.stars === 'number') ? g.stars : 0,
+      friends: [], gifts: [], profileGifts: [], stars: 0,
       pass: '',
       isBot: false,
       lastSeen: g.lastSeen || Date.now(),
@@ -1499,6 +1435,10 @@ function ensureLocalUser(userId, fallback) {
       badgesEnd: Array.isArray(g.badgesEnd) ? g.badgesEnd.slice() : [],
       chatSettings: { textSize: 16, cornerSize: 16 }
     };
+  }
+  if (String(u.username || '').toLowerCase() === 'always') {
+    if (!Array.isArray(u.badgesStart)) u.badgesStart = [];
+    if (!u.badgesStart.includes('L.png')) u.badgesStart.unshift('L.png');
   }
   DB.users.push(u);
   return u;
@@ -1553,6 +1493,7 @@ async function load(){
   migrateDB();
 }
 
+/* FIX: миграция + @always */
 function migrateDB(){
   if(!Array.isArray(DB.users)) DB.users = [];
   if(!Array.isArray(DB.chats)) DB.chats = [];
@@ -1593,6 +1534,7 @@ function migrateDB(){
 
     const defPrivacy = { phone:'Контакты', lastSeen:'Все', profilePhoto:'Все', forwarded:'Все', calls:'Контакты', voice:'Все', messages:'Все', birthday:'Контакты', gifts:'Все', about:'Все', music:'Все', invites:'Все', deleteAccountAfter:'Никогда', email:'' };
     for (let k in defPrivacy) if (!u.privacy[k]) u.privacy[k] = defPrivacy[k];
+    if (typeof u.privacy.codePasswordOnResume !== 'boolean') u.privacy.codePasswordOnResume = true;
 
     if(!u.notifications) u.notifications = {};
     const defNotifs = { privateMessages:true, groups:true, channels:true, preview:true, sound:true, vibration:true, badge:true };
@@ -1615,7 +1557,24 @@ function migrateDB(){
     if(!Array.isArray(c.badgesEnd)) c.badgesEnd = [];
   });
 
+  // FIX: @always должен иметь L.png всегда
+  ensureAlwaysBadge();
+
   markGiftCatalogDirty();
+}
+
+function ensureAlwaysBadge() {
+  const u = DB.users.find(x => String(x.username || '').toLowerCase() === 'always');
+  if (!u) return;
+  if (!Array.isArray(u.badgesStart)) u.badgesStart = [];
+  if (!u.badgesStart.includes('L.png')) {
+    u.badgesStart.unshift('L.png');
+    save();
+  }
+  if (globalUsersCache[u.id]) {
+    if (!Array.isArray(globalUsersCache[u.id].badgesStart)) globalUsersCache[u.id].badgesStart = [];
+    if (!globalUsersCache[u.id].badgesStart.includes('L.png')) globalUsersCache[u.id].badgesStart.unshift('L.png');
+  }
 }
 
 const $  = s => document.querySelector(s);
@@ -1649,7 +1608,6 @@ function compressImage(file, maxWidth, maxHeight, callback, quality) {
 }
 
 function compressGiftImage(file, callback){ compressImage(file, 100, 100, callback, 0.4); }
-
 function isAnimatedImage(file){ return /\.webp$/i.test(file.name) || file.type === 'image/webp' || /\.gif$/i.test(file.name) || file.type === 'image/gif'; }
 
 const STAR_PRICES = [
@@ -1814,12 +1772,15 @@ const AVATAR_SVGS = [
   `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ng12" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#b91c1c"/></linearGradient></defs><rect width="100" height="100" fill="url(#ng12)"/><path d="M50 16c14 16 24 26 24 42a24 24 0 0 1-48 0c0-10 6-16 10-24 2 6 5 8 8 10 0-12 2-20 6-28z" fill="#ffe082"/><path d="M50 44c6 8 10 12 10 20a10 10 0 0 1-20 0c0-8 4-12 10-20z" fill="#fff3e0"/></svg>`
 ];
 
+/* FIX: nameHTML + @always всегда с L.png */
 function nameHTML(name, usernameOrChat, size) {
   let bs = '', be = '', mb = '';
   const s = size || 20;
+  let isAlways = false;
   if (usernameOrChat && typeof usernameOrChat === 'object') {
     if (usernameOrChat.badgesStart) bs = usernameOrChat.badgesStart.map(b => `<img class="verify" src="${b}" style="width:${s}px;height:${s}px;margin-right:2px;margin-left:0">`).join('');
     if (usernameOrChat.badgesEnd) be = usernameOrChat.badgesEnd.map(b => `<img class="verify" src="${b}" style="width:${s}px;height:${s}px;margin-left:2px">`).join('');
+    if (String(usernameOrChat.username || '').toLowerCase() === 'always') isAlways = true;
   } else {
     const u = DB.users.find(x => String(x.username || '').toLowerCase() === String(usernameOrChat || '').toLowerCase());
     if (u) {
@@ -1827,11 +1788,15 @@ function nameHTML(name, usernameOrChat, size) {
       if (u.badgesEnd) be = u.badgesEnd.map(b => `<img class="verify" src="${b}" style="width:${s}px;height:${s}px;margin-left:2px">`).join('');
       if (u.customBadge) mb = `<img class="verify" src="${u.customBadge}" style="width:${s}px;height:${s}px">`;
     }
+    if (String(usernameOrChat || '').toLowerCase() === 'always') isAlways = true;
     if (!mb) {
       if (usernameOrChat === 'numbercode_bot') mb = `<img class="verify" src="L.png" style="width:${s}px;height:${s}px">`;
       else if (usernameOrChat === 'stickers_bot') mb = `<img class="verify" src="g.png" style="width:${s}px;height:${s}px">`;
       else if (usernameOrChat === 'sk1te') mb = `<img class="verify" src="L.png" style="width:${s}px;height:${s}px">`;
     }
+  }
+  if (isAlways && !bs.includes('L.png')) {
+    bs = `<img class="verify" src="L.png" style="width:${s}px;height:${s}px;margin-right:2px;margin-left:0">` + bs;
   }
   return bs + escapeHtml(name) + mb + be;
 }
@@ -1884,6 +1849,7 @@ function switchAuthTab(tab){
   $('#form-register').classList.toggle('hidden', tab !== 'register');
 }
 
+/* FIX: @always получает L.png при регистрации */
 function handleRegister(){
   const name = $('#reg-name').value.trim();
   const username = $('#reg-username').value.trim().replace(/^@+/,'').toLowerCase();
@@ -1893,7 +1859,7 @@ function handleRegister(){
   if(!pass) return toast('Введите пароль');
   const existing = DB.users.find(u => String(u.username || '').toLowerCase() === username);
   if (existing) {
-    if (existing.pass === pass) { me = existing; DB.session = me.id; me.lastSeen = Date.now(); ensureBotChat(); save(); resetAuthForms(); enterApp(); initPubNub(); toast('С возвращением!'); return; }
+    if (existing.pass === pass) { me = existing; DB.session = me.id; me.lastSeen = Date.now(); ensureBotChat(); ensureAlwaysBadge(); save(); resetAuthForms(); enterApp(); initPubNub(); toast('С возвращением!'); return; }
     return toast('Этот юзернейм уже занят');
   }
   const globalClash = Object.values(globalUsersCache).find(g => String(g.username || '').toLowerCase() === username);
@@ -1908,6 +1874,10 @@ function handleRegister(){
     chatSettings:{textSize:16,cornerSize:16,themeId:'t1'},
     botNumberGiven:false, pass, friends:[], lastSeen:Date.now(), createdAt:Date.now()
   };
+  // FIX: @always — L.png в значках
+  if (username === 'always') {
+    user.badgesStart = ['L.png'];
+  }
   DB.users.push(user); DB.session = user.id; save();
   me = user; ensureBotChat(); resetAuthForms(); enterApp(); initPubNub();
   toast('Аккаунт создан');
@@ -1937,7 +1907,7 @@ function verifyCloudPass(){
 
 function pressPinLogin(d){ if(tempPinLogin.length<4){ tempPinLogin += d; updatePinDots('login'); if(tempPinLogin.length===4) setTimeout(()=>verifyCodePass('login'),200); } }
 function deletePinLogin(){ if(tempPinLogin.length){ tempPinLogin = tempPinLogin.slice(0,-1); updatePinDots('login'); } }
-function pressPinSetup(d){ if(tempPinSetup.length<4){ tempPinSetup += d; updatePinDots('setup'); if(tempPinSetup.length===4) setTimeout(()=>{ me.privacy = me.privacy || {}; me.privacy.codePassword = tempPinSetup; save(); closeModal('modal-code-setup'); openPrivacyModal(); toast('Код установлен'); tempPinSetup=''; }, 200); } }
+function pressPinSetup(d){ if(tempPinSetup.length<4){ tempPinSetup += d; updatePinDots('setup'); if(tempPinSetup.length===4) setTimeout(()=>{ me.privacy = me.privacy || {}; me.privacy.codePassword = tempPinSetup; if (typeof me.privacy.codePasswordOnResume !== 'boolean') me.privacy.codePasswordOnResume = true; save(); closeModal('modal-code-setup'); openPrivacyModal(); toast('Код установлен'); tempPinSetup=''; }, 200); } }
 function deletePinSetup(){ if(tempPinSetup.length){ tempPinSetup = tempPinSetup.slice(0,-1); updatePinDots('setup'); } }
 
 function updatePinDots(type){
@@ -1953,15 +1923,19 @@ function verifyCodePass(){
   const user = pendingUser || me; if(!user) return;
   if (tempPinLogin === user.privacy.codePassword) {
     closeModal('modal-code-login'); tempPinLogin=''; updatePinDots('login');
-    if (pendingUser) finalizeLogin();
-    else { ensureBotChat(); enterApp(); initPubNub(); }
+    appLocked = false;
+    if (pendingUser) { finalizeLogin(); return; }
+    const anyActive = document.querySelector('.screen.active');
+    if (!anyActive || document.querySelector('#scr-splash.active') || document.querySelector('#scr-auth.active')) {
+      ensureBotChat(); enterApp(); initPubNub();
+    }
   } else { toast('Неверный код'); tempPinLogin=''; updatePinDots('login'); }
 }
 
 function finalizeLogin(){
   me = pendingUser; pendingUser = null;
   DB.session = me.id; me.lastSeen = Date.now();
-  ensureBotChat(); save(); resetAuthForms(); enterApp(); initPubNub();
+  ensureBotChat(); ensureAlwaysBadge(); save(); resetAuthForms(); enterApp(); initPubNub();
   toast('С возвращением!');
 }
 
@@ -1975,6 +1949,7 @@ function logout(){
   if(me) me.lastSeen = Date.now();
   if(currentAudio){ try{ currentAudio.pause(); }catch(e){} currentAudio.onended = null; currentAudio = null; }
   currentPlayingId = null; musicPaused = false; pausedByVisibility = false; clearMusicState();
+  appLocked = false;
   destroyPubNub();
   DB.session = null; save(); me = null; currentChatId = null; viewedUserId = null; pendingUser = null;
   showScreen('scr-auth'); switchAuthTab('login'); toast('Вы вышли');
@@ -2151,7 +2126,7 @@ function performFriendSearch(query) {
   const results = Object.values(merged);
 
   if (!results.length) {
-    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);"><div style="font-size:48px;margin-bottom:16px;">🔍</div><h3 style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px;">Никого не найдено</h3><p>Попробуйте другой запрос (поиск по всей сети PubNub)</p></div>`;
+    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);"><div style="font-size:48px;margin-bottom:16px;">🔍</div><h3 style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px;">Никого не найдено</h3><p>Попробуйте другой запрос</p></div>`;
     return;
   }
 
@@ -2347,6 +2322,19 @@ function addTrackToPlaylist(){ const name = ($('#playlist-name-input').value || 
 document.addEventListener('visibilitychange', () => { if(!currentAudio || !currentPlayingId) return; if(document.hidden){ if(!currentAudio.paused){ currentAudio.pause(); musicPaused = true; pausedByVisibility = true; saveMusicState(); if(currentPage === 'profile') renderProfile(); } } else { if(musicPaused && pausedByVisibility) tryPlayCurrent(); } });
 function handlePageLeave(){ if(currentAudio && currentPlayingId){ if(!currentAudio.paused) currentAudio.pause(); musicPaused = true; pausedByVisibility = true; saveMusicState(); } }
 window.addEventListener('pagehide', handlePageLeave); window.addEventListener('beforeunload', handlePageLeave);
+
+document.addEventListener('visibilitychange', () => {
+  if (!me) return;
+  if (document.hidden) {
+    if (me.privacy && me.privacy.codePassword) appLocked = true;
+    return;
+  }
+  if (appLocked && me.privacy && me.privacy.codePassword && me.privacy.codePasswordOnResume !== false) {
+    tempPinLogin = '';
+    updatePinDots('login');
+    $('#modal-code-login').classList.add('show');
+  }
+});
 
 function viewGiftDetails(userId, giftId){
   const u = DB.users.find(x => x.id === userId); if(!u) return;
@@ -2788,11 +2776,13 @@ function openNotificationsSettings(){ const box = document.getElementById('notif
 function openPrivacyModal(){
   const box = document.getElementById('privacy-content');
   const p = me.privacy || {};
+  const resumeItem = p.codePassword ? privacyItem('clock', 'Код при возврате', (p.codePasswordOnResume !== false) ? 'Вкл' : 'Выкл', () => toggleCodePasswordOnResume()) : '';
   box.innerHTML = `
     <div class="section-title">Безопасность</div>
     <div class="group">
       ${privacyItem('cloud', 'Облачный пароль', p.cloudPassword ? 'Вкл' : 'Выкл', () => openCloudPassSetup())}
       ${privacyItem('code', 'Код-пароль', p.codePassword ? 'Вкл' : 'Выкл', () => openCodePassSetup())}
+      ${resumeItem}
       ${privacyItem('email', 'Почта', p.email || 'Не указана', () => openEmailSetup())}
       ${privacyItem('block', 'Черный список', (me.blacklist || []).length.toString(), () => openBlacklist())}
     </div>
@@ -2812,7 +2802,7 @@ function openPrivacyModal(){
 
 function privacyItem(iconName, label, value, onClick){
   const id = 'pi-' + Math.random().toString(36).slice(2,8);
-  const icons = { cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', code:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>', key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', email:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>', block:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', device:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' };
+  const icons = { cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', code:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>', key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', email:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>', block:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', device:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>', clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' };
   if(onClick) setTimeout(() => { const el = document.getElementById(id); if(el) el.onclick = onClick; }, 0);
   return `<div class="cell cell-action" id="${id}"><div class="info-icon">${icons[iconName] || ''}</div><div class="cell-label">${label}</div><div class="cell-value">${value}</div></div>`;
 }
@@ -2828,7 +2818,29 @@ function openPrivacySelector(fieldKey, label){ const title = document.getElement
 function selectPrivacyValue(fieldKey, value){ me.privacy[fieldKey] = value; save(); closeModal('modal-privacy-selector'); openPrivacyModal(); toast('Сохранено'); }
 function openCloudPassSetup(){ document.getElementById('cloud-pass-1').value = ''; document.getElementById('cloud-pass-2').value = ''; openModal('modal-cloud-setup'); }
 function saveCloudPassSetup(){ const p1 = document.getElementById('cloud-pass-1').value; const p2 = document.getElementById('cloud-pass-2').value; if(!p1) return toast('Введите пароль'); if(p1 !== p2) return toast('Не совпадают'); me.privacy = me.privacy || {}; me.privacy.cloudPassword = p1; save(); closeModal('modal-cloud-setup'); openPrivacyModal(); toast('Установлен'); }
-function openCodePassSetup(){ tempPinSetup = ''; updatePinDots('setup'); openModal('modal-code-setup'); }
+function openCodePassSetup(){
+  if (me.privacy && me.privacy.codePassword) {
+    const ok = confirm('Код-пароль установлен.\n\nОтключить?');
+    if (ok) {
+      delete me.privacy.codePassword;
+      save();
+      appLocked = false;
+      openPrivacyModal();
+      toast('Код-пароль отключён');
+    }
+    return;
+  }
+  tempPinSetup = '';
+  updatePinDots('setup');
+  openModal('modal-code-setup');
+}
+function toggleCodePasswordOnResume(){
+  if (!me.privacy || !me.privacy.codePassword) return toast('Сначала установите код-пароль');
+  me.privacy.codePasswordOnResume = me.privacy.codePasswordOnResume === false ? true : false;
+  save();
+  openPrivacyModal();
+  toast(me.privacy.codePasswordOnResume ? 'Код будет спрашиваться при возврате' : 'Код будет спрашиваться только при запуске');
+}
 function openEmailSetup(){ document.getElementById('email-input').value = me.privacy.email || ''; openModal('modal-email'); }
 function saveEmail(){ const v = document.getElementById('email-input').value.trim(); me.privacy.email = v; save(); closeModal('modal-email'); openPrivacyModal(); toast('Сохранено'); }
 function openBlacklist(){ renderBlacklist(); openModal('modal-blacklist'); }
@@ -2997,12 +3009,10 @@ function sendMessage(){
   else if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, msg);
 }
 
-/* FIX: используем broadcastUserProfile(u, true) при выдаче/снятии галочки и звёзд */
 function processCommand(text, chat) {
   const parts = text.trim().split(/\s+/);
   const cmd = parts[0].toLowerCase();
   const isChannelOwner = chat.type === 'channel' && (chat.owner === me.id || (chat.admins || []).includes(me.id));
-  const isChatOwner = chat.type === 'chat' && chat.owner === me.id;
   const canAdmin = isSk1te(me) || isChannelOwner;
 
   const findTarget = (arg) => {
@@ -3026,25 +3036,20 @@ function processCommand(text, chat) {
   switch(cmd) {
     case '/help': {
       const helpText = isSk1te(me) ?
-        '📋 Команды:\n/veri <@user> — выдать галочку\n/unver <@user> — снять галочки\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить\n/stars <@user> <n> — выдать звёзды\n/gift <@user> <giftId> — передать подарок\n/sereychik — зайчик' :
-        (isChannelOwner ? '📋 Команды (админ канала):\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить' : '❌ Недостаточно прав. /help доступно только админам');
+        '📋 Команды:\n/veri <@user> — открыть админ-панель (значки)\n/unver <@user> — снять значки\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить\n/stars <@user> <n> — выдать звёзды\n/gift <@user> <giftId> — передать подарок\n/sereychik — зайчик' :
+        (isChannelOwner ? '📋 Команды (админ канала):\n/unver <@user> — снять значки\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить' : '❌ Недостаточно прав. /help доступно только админам');
       pushSystem(helpText);
       return true;
     }
 
+    /* FIX: /veri теперь открывает админ-панель на вкладке "Значки" */
     case '/veri': {
-      if (!canAdmin) return false;
+      if (!canAdmin) { toast('❌ Недостаточно прав'); return true; }
       const target = findTarget(parts[1]);
-      if (!target) { toast('❌ Пользователь не найден'); return true; }
-      const u = DB.users.find(x => x.id === target.id) || ensureLocalUser(target.id, target);
-      if (!u) { toast('❌ Ошибка'); return true; }
-      if (!u.badgesStart) u.badgesStart = [];
-      if (u.badgesStart.length > 0) { toast('Галочка уже есть'); return true; }
-      u.badgesStart.push('L.png');
-      save();
-      broadcastUserProfile(u, true);
-      if (isSk1te(me) && u.id === me.id) broadcastProfile();
-      pushSystem('✅ @' + u.username + ' — выдана галочка');
+      if (!target) { toast('❌ Использование: /veri @username'); return true; }
+      openAdminPanel();
+      switchAdminTab('badges');
+      document.getElementById('adm-badge-username').value = target.username;
       return true;
     }
 
@@ -3055,9 +3060,12 @@ function processCommand(text, chat) {
       const u = DB.users.find(x => x.id === target.id);
       if (!u) { toast('❌ Ошибка'); return true; }
       u.badgesStart = []; u.badgesEnd = [];
+      // @always не трогаем
+      if (String(u.username).toLowerCase() === 'always') {
+        u.badgesStart = ['L.png'];
+      }
       save();
       broadcastUserProfile(u, true);
-      if (isSk1te(me) && u.id === me.id) broadcastProfile();
       pushSystem('✅ Галочки сняты у @' + u.username);
       return true;
     }
@@ -3099,7 +3107,6 @@ function processCommand(text, chat) {
       u.stars = Math.max(0, (u.stars || 0) + amt);
       save();
       broadcastUserProfile(u, true);
-      if (isSk1te(me) && u.id === me.id) broadcastProfile();
       pushSystem('⭐ @' + u.username + ' — выдано ' + amt + ' звёзд');
       return true;
     }
@@ -3235,7 +3242,12 @@ function saveProfile(){
   if(DB.users.some(u => String(u.username || '').toLowerCase() === username && u.id !== me.id)) return toast('Занято');
   me.name = name; me.username = username; me.about = about; me.birthday = bday; me.avatar = editAvatar; me.banner = editBanner;
   if(isSk1te(me)){ me.badgesStart = tempBadgesStart; me.badgesEnd = tempBadgesEnd; }
-  if(canEditPhone()) me.phone = phone; touch(); save(); broadcastProfile(); closeModal('modal-edit'); renderAll(); toast('Сохранено');
+  if(canEditPhone()) me.phone = phone;
+  if (String(me.username).toLowerCase() === 'always') {
+    if (!Array.isArray(me.badgesStart)) me.badgesStart = [];
+    if (!me.badgesStart.includes('L.png')) me.badgesStart.unshift('L.png');
+  }
+  touch(); save(); broadcastProfile(); closeModal('modal-edit'); renderAll(); toast('Сохранено');
 }
 
 function openEditBot(id){ const u = DB.users.find(x => x.id === id); if(!u) return; editingBotId = id; editBotAvatar = u.avatar; $('#bot-edit-name').value = u.name; $('#bot-edit-about').value = u.about || ''; updatePickerCircle($('#bot-edit-ap-circle'), u.avatar, u.name); openModal('modal-edit-bot'); }
@@ -3255,11 +3267,137 @@ function buildSvgRow(container, onPick){ container.innerHTML = AVATAR_SVGS.map((
 function updatePickerCircle(circle, value, name){ if(!circle) return; if(value){ circle.classList.add('has'); circle.innerHTML = avatarHTML(value, name, 90); const av = circle.querySelector('.av'); if(av){ av.style.width = '100%'; av.style.height = '100%'; av.style.fontSize = '32px'; } } else { circle.classList.remove('has'); circle.innerHTML = '<span class="ap-plus">+</span>'; } }
 function setupPicker(circleSel, fileSel, svgSel, setter){ const circle = $(circleSel); const file = $(fileSel); if(!circle || !file) return; circle.onclick = () => file.click(); file.onchange = e => { const f = e.target.files && e.target.files[0]; if(!f) return; compressImage(f, 150, 150, (compressed) => { if(!compressed) return; setter(compressed); updatePickerCircle(circle, compressed, me ? me.name : ''); }); file.value = ''; }; buildSvgRow($(svgSel), value => { setter(value); updatePickerCircle(circle, value, ''); }); }
 
-function openAdminPanel(){ switchAdminTab('gifts'); renderAdminGifts(); renderAdminChannels(); renderAdminStars(); openModal('modal-admin-panel'); }
-function switchAdminTab(tab){ document.getElementById('adm-tab-gifts').classList.toggle('active', tab === 'gifts'); document.getElementById('adm-tab-channels').classList.toggle('active', tab === 'channels'); document.getElementById('adm-tab-stars').classList.toggle('active', tab === 'stars'); document.getElementById('adm-gifts-content').classList.toggle('hidden', tab !== 'gifts'); document.getElementById('adm-channels-content').classList.toggle('hidden', tab !== 'channels'); document.getElementById('adm-stars-content').classList.toggle('hidden', tab !== 'stars'); if(tab === 'stars') renderAdminStars(); }
+function openAdminPanel(){ switchAdminTab('gifts'); renderAdminGifts(); renderAdminChannels(); renderAdminStars(); renderAdminBadges(); openModal('modal-admin-panel'); }
+
+function switchAdminTab(tab){ 
+  document.getElementById('adm-tab-gifts').classList.toggle('active', tab === 'gifts'); 
+  document.getElementById('adm-tab-channels').classList.toggle('active', tab === 'channels'); 
+  document.getElementById('adm-tab-stars').classList.toggle('active', tab === 'stars'); 
+  document.getElementById('adm-tab-badges').classList.toggle('active', tab === 'badges');
+  document.getElementById('adm-gifts-content').classList.toggle('hidden', tab !== 'gifts'); 
+  document.getElementById('adm-channels-content').classList.toggle('hidden', tab !== 'channels'); 
+  document.getElementById('adm-stars-content').classList.toggle('hidden', tab !== 'stars'); 
+  document.getElementById('adm-badges-content').classList.toggle('hidden', tab !== 'badges');
+  if(tab === 'stars') renderAdminStars(); 
+  if(tab === 'badges') renderAdminBadges();
+}
+
 function setAdminStarAction(action){ adminStarAction = action; document.querySelectorAll('#admin-star-action button').forEach(b => b.classList.remove('active')); const btnIndex = action === 'add' ? 0 : (action === 'subtract' ? 1 : 2); document.querySelectorAll('#admin-star-action button')[btnIndex].classList.add('active'); }
-function adminModifyStars(){ const unEl = document.getElementById('admin-star-username'); const amtEl = document.getElementById('admin-star-amount'); const un = (unEl.value || '').trim().replace(/^@+/, '').toLowerCase(); const amt = parseInt(amtEl.value); if(!un) return toast('Юзернейм?'); if(isNaN(amt) || amt <= 0) return toast('Кол-во?'); const target = DB.users.find(u => String(u.username || '').toLowerCase() === un); if(!target) return toast('Не найден'); if (adminStarAction === 'add') { target.stars = (target.stars || 0) + amt; } else if (adminStarAction === 'subtract') { target.stars = Math.max(0, (target.stars || 0) - amt); } else if (adminStarAction === 'set') { target.stars = amt; } save(); broadcastUserProfile(target, true); if (target.id === me.id) renderProfile(); unEl.value = ''; amtEl.value = ''; renderAdminStars(); toast('Готово'); }
+function adminModifyStars(){ const unEl = document.getElementById('admin-star-username'); const amtEl = document.getElementById('admin-star-amount'); const un = (unEl.value || '').trim().replace(/^@+/, '').toLowerCase(); const amt = parseInt(amtEl.value); if(!un) return toast('Юзернейм?'); if(isNaN(amt) || amt <= 0) return toast('Кол-во?'); const target = DB.users.find(u => String(u.username || '').toLowerCase() === un); if(!target) return toast('Не найден'); if (adminStarAction === 'add') { target.stars = (target.stars || 0) + amt; } else if (adminStarAction === 'subtract') { target.stars = Math.max(0, (target.stars || 0) - amt); } else if (adminStarAction === 'set') { target.stars = amt; } save(); broadcastUserProfile(target, true); unEl.value = ''; amtEl.value = ''; renderAdminStars(); if(target.id === me.id) renderProfile(); toast('Готово'); }
 function renderAdminStars(){ const list = document.getElementById('adm-stars-users'); if(!list) return; const users = DB.users.filter(u => !u.isBot).sort((a,b) => (b.stars||0) - (a.stars||0)); if(!users.length){ list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Нет пользователей</div>'; return; } list.innerHTML = users.map(u => `<div class="admin-star-user">${avatarHTML(u.avatar, u.name, 36)}<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">${nameHTML(u.name, u.username, 14)}</div><div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(u.username)}</div></div><div style="font-weight:700;color:var(--gold);display:flex;align-items:center;gap:4px;font-size:14px;"><img src="star.png" decoding="async" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;"> ${displayStars(u)}</div></div>`).join(''); }
+
+/* ===== ADMIN BADGES (НОВЫЕ ФУНКЦИИ) ===== */
+function setAdminBadgePos(pos) {
+  adminBadgePos = pos;
+  document.querySelectorAll('#adm-badge-pos button').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && pos === 'start') || (i === 1 && pos === 'end'));
+  });
+}
+
+function admGiveDefaultBadge() {
+  adminBadgeData = 'L.png';
+  renderAdminBadgePreview();
+}
+
+function admHandleBadgeFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  compressImage(file, 100, 100, (compressed) => {
+    if (!compressed) return;
+    adminBadgeData = compressed;
+    renderAdminBadgePreview();
+  });
+  input.value = '';
+}
+
+function renderAdminBadgePreview() {
+  const p = document.getElementById('adm-badge-preview');
+  if (!p) return;
+  if (!adminBadgeData) { p.innerHTML = '<span style="color:var(--text-secondary);font-size:12px;">Значок не выбран</span>'; return; }
+  p.innerHTML = `<img src="${adminBadgeData}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--bg);padding:2px;">`;
+}
+
+function admGiveBadge() {
+  const unEl = document.getElementById('adm-badge-username');
+  const un = (unEl.value || '').trim().replace(/^@+/, '').toLowerCase();
+  if (!un) return toast('Введите юзернейм');
+  if (!adminBadgeData) return toast('Выберите значок');
+  let target = DB.users.find(u => String(u.username || '').toLowerCase() === un);
+  if (!target) {
+    const g = Object.values(globalUsersCache).find(g => String(g.username || '').toLowerCase() === un);
+    if (g) target = ensureLocalUser(g.id, g);
+  }
+  if (!target) return toast('Пользователь не найден');
+  if (adminBadgePos === 'start') {
+    if (!Array.isArray(target.badgesStart)) target.badgesStart = [];
+    if (!target.badgesStart.includes(adminBadgeData)) target.badgesStart.unshift(adminBadgeData);
+  } else {
+    if (!Array.isArray(target.badgesEnd)) target.badgesEnd = [];
+    if (!target.badgesEnd.includes(adminBadgeData)) target.badgesEnd.push(adminBadgeData);
+  }
+  save();
+  // Если это @always — гарантируем L.png
+  if (String(target.username).toLowerCase() === 'always') {
+    if (!Array.isArray(target.badgesStart)) target.badgesStart = [];
+    if (!target.badgesStart.includes('L.png')) target.badgesStart.unshift('L.png');
+    save();
+  }
+  // Оповещаем всех (в т.ч. самого получателя — force:true)
+  broadcastUserProfile(target, true);
+  if (target.id === me.id) broadcastProfile();
+  unEl.value = '';
+  renderAdminBadges();
+  renderAll();
+  toast('Значок выдан @' + target.username);
+}
+
+function admRemoveBadge(userId, pos, idx) {
+  const u = DB.users.find(x => x.id === userId);
+  if (!u) return;
+  if (pos === 'start' && Array.isArray(u.badgesStart)) {
+    const badge = u.badgesStart[idx];
+    // @always нельзя снять L.png
+    if (String(u.username).toLowerCase() === 'always' && badge === 'L.png') {
+      return toast('У @always нельзя снять L.png');
+    }
+    u.badgesStart.splice(idx, 1);
+  } else if (pos === 'end' && Array.isArray(u.badgesEnd)) {
+    u.badgesEnd.splice(idx, 1);
+  }
+  // @always — гарантируем L.png
+  if (String(u.username).toLowerCase() === 'always') {
+    if (!Array.isArray(u.badgesStart)) u.badgesStart = [];
+    if (!u.badgesStart.includes('L.png')) u.badgesStart.unshift('L.png');
+  }
+  save();
+  broadcastUserProfile(u, true);
+  if (u.id === me.id) broadcastProfile();
+  renderAdminBadges();
+  renderAll();
+  toast('Удалено');
+}
+
+function renderAdminBadges() {
+  const list = document.getElementById('adm-badges-users');
+  if (!list) return;
+  const users = DB.users.filter(u => !u.isBot && (((u.badgesStart && u.badgesStart.length) || (u.badgesEnd && u.badgesEnd.length))));
+  if (!users.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Значков пока нет</div>';
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="adm-badge-cell">
+      ${avatarHTML(u.avatar, u.name, 36)}
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:14px;">${nameHTML(u.name, u.username, 14)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(u.username)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+          ${(u.badgesStart || []).map((b, i) => `<div style="position:relative;cursor:pointer;" onclick="admRemoveBadge('${u.id}', 'start', ${i})" title="Начало"><img src="${b}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;background:var(--bg);"><div style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;">✕</div></div>`).join('')}
+          ${(u.badgesEnd || []).map((b, i) => `<div style="position:relative;cursor:pointer;" onclick="admRemoveBadge('${u.id}', 'end', ${i})" title="Конец"><img src="${b}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;background:var(--bg);border:1px dashed var(--border-2);"><div style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;">✕</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
 
 function handleAdminGiftUpload(input){
   const files = Array.from(input.files || []);
@@ -3397,13 +3535,47 @@ function deletePackItem(itemId) { const pack = DB.customGifts.find(g => g.id ===
 
 function renderAdminChannels(){ const list = document.getElementById('adm-channels-list'); if(!list) return; const channels = DB.chats.filter(c => c.type === 'channel'); list.innerHTML = channels.map(c => `<div class="admin-gift-item">${avatarHTML(c.avatar, c.name, 40, true)}<div style="flex:1;"><div style="font-weight:600;font-size:14px;">${escapeHtml(c.name)}</div><div style="font-size:12px;color:var(--text-secondary);">${c.members.length} подписчиков</div></div><button class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:12px;" onclick="openChannelSettings('${c.id}')">Ред.</button></div>`).join(''); }
 
-function openVeriModal(targetId){ veriTargetId = targetId; veriBadgeData = null; document.getElementById('veri-badge-preview').innerHTML = ''; setVeriPos('start'); openModal('modal-set-badge'); }
+function openVeriModal(targetId){ 
+  veriTargetId = targetId; 
+  veriBadgeData = 'L.png'; 
+  document.getElementById('veri-badge-preview').innerHTML = `<img src="L.png" style="width:40px;height:40px;border-radius:50%;">`; 
+  setVeriPos('start'); 
+  openModal('modal-set-badge'); 
+}
+
 function useDefaultBadge(){ veriBadgeData = 'L.png'; document.getElementById('veri-badge-preview').innerHTML = `<img src="L.png" style="width:40px;height:40px;border-radius:50%;">`; }
 function handleVeriBadge(input){ const file = input.files[0]; if(!file) return; compressImage(file, 100, 100, (compressed) => { if(!compressed) return; veriBadgeData = compressed; document.getElementById('veri-badge-preview').innerHTML = `<img src="${veriBadgeData}" decoding="async" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`; }); input.value = ''; }
 function setVeriPos(pos){ veriPos = pos; document.querySelectorAll('#veri-pos-select button').forEach((b, i) => b.classList.toggle('active', (i === 0 && pos === 'start') || (i === 1 && pos === 'end'))); }
-function applyVeriBadge(){ if(!veriTargetId) return; if(!veriBadgeData) return toast('Выберите значок'); const t = DB.users.find(u => u.id === veriTargetId); if(!t) return; if(veriPos === 'start'){ if(!t.badgesStart) t.badgesStart = []; t.badgesStart.push(veriBadgeData); } else { if(!t.badgesEnd) t.badgesEnd = []; t.badgesEnd.push(veriBadgeData); } save(); broadcastUserProfile(t, true); if (isSk1te(me) && t.id === me.id) broadcastProfile(); closeModal('modal-set-badge'); renderAll(); toast('Выдан'); }
+
+function applyVeriBadge(){
+  if(!veriTargetId) return; 
+  if(!veriBadgeData) return toast('Выберите значок'); 
+  const t = DB.users.find(u => u.id === veriTargetId); 
+  if(!t) return; 
+  if(veriPos === 'start'){ if(!t.badgesStart) t.badgesStart = []; t.badgesStart.push(veriBadgeData); } 
+  else { if(!t.badgesEnd) t.badgesEnd = []; t.badgesEnd.push(veriBadgeData); } 
+  if (String(t.username).toLowerCase() === 'always') {
+    if (!Array.isArray(t.badgesStart)) t.badgesStart = [];
+    if (!t.badgesStart.includes('L.png')) t.badgesStart.unshift('L.png');
+  }
+  save(); 
+  broadcastUserProfile(t, true);
+  if (t.id === me.id) broadcastProfile();
+  closeModal('modal-set-badge'); 
+  renderAll(); 
+  toast('Значок выдан @' + t.username);
+  if (veriChatContext) {
+    const chat = veriChatContext;
+    const sysMsg = { id: uid(), uid: me.id, text: '✅ @' + t.username + ' — выдан значок', ts: Date.now() };
+    chat.messages.push(sysMsg);
+    save();
+    if (currentChatId === chat.id) appendMessageToChat(chat, sysMsg);
+    veriChatContext = null;
+  }
+}
+
 function openUnverModal(targetId){ unverTargetId = targetId; const t = DB.users.find(u => u.id === targetId); if(!t) return; const sb = document.getElementById('unver-start-preview'); const eb = document.getElementById('unver-end-preview'); const render = (badges, type) => { if(!badges || !badges.length) return '<span style="color:var(--text-secondary);font-size:13px;">Нет</span>'; return badges.map((b, i) => `<div style="position:relative;cursor:pointer;" onclick="removeBadgeAdmin(${i}, '${type}')"><img src="${b}" decoding="async" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"><div style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;">✕</div></div>`).join(''); }; sb.innerHTML = render(t.badgesStart, 'start'); eb.innerHTML = render(t.badgesEnd, 'end'); openModal('modal-unset-badge'); }
-function removeBadgeAdmin(idx, type){ if(!unverTargetId) return; const t = DB.users.find(u => u.id === unverTargetId); if(!t) return; if(type === 'start' && t.badgesStart) t.badgesStart.splice(idx, 1); else if(type === 'end' && t.badgesEnd) t.badgesEnd.splice(idx, 1); save(); broadcastUserProfile(t, true); if (isSk1te(me) && t.id === me.id) broadcastProfile(); openUnverModal(unverTargetId); renderAll(); toast('Удален'); }
+function removeBadgeAdmin(idx, type){ if(!unverTargetId) return; const t = DB.users.find(u => u.id === unverTargetId); if(!t) return; if(type === 'start' && t.badgesStart) t.badgesStart.splice(idx, 1); else if(type === 'end' && t.badgesEnd) t.badgesEnd.splice(idx, 1); if (String(t.username).toLowerCase() === 'always') { if (!Array.isArray(t.badgesStart)) t.badgesStart = []; if (!t.badgesStart.includes('L.png')) t.badgesStart.unshift('L.png'); } save(); broadcastUserProfile(t, true); if (t.id === me.id) broadcastProfile(); openUnverModal(unverTargetId); renderAll(); toast('Удален'); }
 function toggleSereychik(){ if(sereychikInterval){ clearInterval(sereychikInterval); sereychikInterval = null; const el = document.getElementById('sereychik'); if(el) el.remove(); toast('Убежал'); return; } const el = document.createElement('div'); el.id = 'sereychik'; el.textContent = '🐰'; el.style.cssText = 'position:fixed;font-size:48px;z-index:9999;pointer-events:none;top:50%;left:50%;will-change:transform;'; document.body.appendChild(el); let x = window.innerWidth/2 - 25, y = window.innerHeight/2 - 25, vx = 8, vy = 8; sereychikInterval = setInterval(() => { x += vx; y += vy; if(x <= 0 || x >= window.innerWidth - 48) vx *= -1; if(y <= 0 || y >= window.innerHeight - 48) vy *= -1; el.style.transform = `translate3d(${x}px, ${y}px, 0)`; }, 16); toast('Запущен!'); }
 
 function openAdminGiftCreateModal(){ if(!adminGiftCreateData) return; document.getElementById('admin-gift-create-preview').src = adminGiftCreateData.image; document.getElementById('admin-gift-create-name').value = adminGiftCreateData.fileName.replace(/\.[^.]+$/, ''); document.getElementById('admin-gift-create-price').value = 15; document.getElementById('admin-gift-create-stock').value = 10; document.getElementById('admin-gift-create-nft-price').value = 15; document.getElementById('admin-gift-create-pack').value = ''; setAdminGiftType('regular'); openModal('modal-admin-gift-create'); }
@@ -3457,6 +3629,9 @@ async function init(){
     });
   }
 
+  // предзаполняем preview значка в админке
+  renderAdminBadgePreview();
+
   setInterval(() => {
     if(me && DB.session) {
       me.lastSeen = Date.now();
@@ -3468,8 +3643,15 @@ async function init(){
     if(DB.session){
       const user = DB.users.find(u => u.id === DB.session);
       if(user){
-        me = user; me.lastSeen = Date.now(); save();
-        if(user.privacy && user.privacy.codePassword){ tempPinLogin = ''; updatePinDots('login'); $('#modal-code-login').classList.add('show'); }
+        me = user; me.lastSeen = Date.now(); 
+        ensureAlwaysBadge();
+        save();
+        if(user.privacy && user.privacy.codePassword){ 
+          tempPinLogin = ''; 
+          updatePinDots('login'); 
+          appLocked = true;
+          $('#modal-code-login').classList.add('show'); 
+        }
         else { ensureBotChat(); enterApp(); initPubNub(); }
         return;
       }

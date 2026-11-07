@@ -151,6 +151,33 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .profile-banner .banner-empty svg{width:32px;height:32px;stroke:currentColor;fill:none;}
 
 .profile-card{background:var(--surface-1);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:16px;}
+
+/* === АВАТАРКА С ПОДАРКАМИ ВОКРУГ === */
+.avatar-with-gifts{
+  position:relative;
+  width:200px;
+  height:200px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto;
+}
+.avatar-with-gifts .core-avatar{
+  position:relative;
+  z-index:2;
+}
+.gift-frame-item{
+  position:absolute;
+  width:32px;
+  height:32px;
+  object-fit:contain;
+  z-index:3;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  cursor:pointer;
+  transition:transform 0.15s;
+}
+.gift-frame-item:hover{transform:scale(1.15);}
+
 .p-name{font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;}
 .p-username{font-size:14px;color:var(--accent-primary);font-weight:500;}
 .p-stats{display:flex;gap:24px;margin-top:8px;}
@@ -299,6 +326,10 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .bulk-item label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);}
 
 .remote-tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:#10b981;margin-left:4px;vertical-align:middle;}
+
+/* Кнопки действий с подарком */
+.gift-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.gift-actions .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;}
 </style>
 </head>
 <body>
@@ -547,6 +578,16 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
       <div class="sheet-handle"></div>
       <h2 id="modal-account-title">Аккаунт</h2>
       <div id="account-content"></div>
+    </div>
+  </div>
+
+  <!-- НОВАЯ МОДАЛКА: передача подарка -->
+  <div class="modal" id="modal-gift-transfer" style="z-index:180;">
+    <div class="modal-backdrop" onclick="closeModal('modal-gift-transfer')"></div>
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>Передать подарок</h2>
+      <div id="gift-transfer-content"></div>
     </div>
   </div>
 
@@ -1043,7 +1084,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 
 <script>
 /* =========================================================
-   PUBNUB CONFIG (твои ключи)
+   PUBNUB CONFIG
    ========================================================= */
 const PUBNUB_PUBLISH_KEY = 'pub-c-b018b0e8-dcbb-4b62-8f9a-cb7a35c59b9e';
 const PUBNUB_SUBSCRIBE_KEY = 'sub-c-85279ac2-5df5-4649-8a1e-be6d2c744c33';
@@ -1121,6 +1162,9 @@ let sereychikInterval = null;
 let giftCatalogDirty = true;
 let giftCatalogReady = false;
 function markGiftCatalogDirty(){ giftCatalogDirty = true; giftCatalogReady = false; }
+
+/* ==== ТРОТТЛИНГ BROADCAST (не более 1 раза в 10 сек) ==== */
+let lastBroadcastTs = 0;
 
 let idb = null;
 let idbReady = false;
@@ -1216,7 +1260,6 @@ function handleProfileBroadcast(data) {
     lastSeen: data.lastSeen || Date.now(),
     _online: true
   };
-  // Update local user lastSeen (so isOnline works)
   const local = DB.users.find(u => u.id === data.id);
   if (local) {
     local.lastSeen = data.lastSeen || Date.now();
@@ -1314,13 +1357,16 @@ function handleIncomingPersonalMsg(payload) {
   if (chat.messages.some(m => m.id === payload.message.id)) return;
   chat.messages.push(payload.message);
 
-  // ensure sender exists
   const sid = payload.message.uid;
   ensureLocalUser(sid, payload.senderInfo);
 
   save();
-  if (currentChatId === chat.id) renderMessages(true);
-  else if (currentPage === 'chats') renderChats();
+  // ТОЧЕЧНОЕ ОБНОВЛЕНИЕ — только одно сообщение, не перерисовка
+  if (currentChatId === chat.id) {
+    appendMessageToChat(chat, payload.message);
+  } else if (currentPage === 'chats') {
+    renderChats();
+  }
 }
 
 function handleIncomingChannelMsg(channel, payload) {
@@ -1333,8 +1379,11 @@ function handleIncomingChannelMsg(channel, payload) {
   chat.messages.push(payload.message);
   ensureLocalUser(payload.message.uid, payload.senderInfo);
   save();
-  if (currentChatId === chat.id) renderMessages(true);
-  else if (currentPage === 'chats') renderChats();
+  if (currentChatId === chat.id) {
+    appendMessageToChat(chat, payload.message);
+  } else if (currentPage === 'chats') {
+    renderChats();
+  }
 }
 
 function publishPersonalMessage(chat, message) {
@@ -1379,7 +1428,7 @@ function ensureLocalUser(userId, fallback) {
   if (u) return u;
   const g = globalUsersCache[userId] || fallback;
   if (!g) {
-    u = { id: userId, name: 'User', username: userId, avatar: null, about: '', phone: '', birthday: '', friends: [], gifts: [], stars: 0, pass: '', isBot: false, lastSeen: Date.now(), badgesStart: [], badgesEnd: [], chatSettings: { textSize: 16, cornerSize: 16 } };
+    u = { id: userId, name: 'User', username: userId, avatar: null, about: '', phone: '', birthday: '', friends: [], gifts: [], profileGifts: [], stars: 0, pass: '', isBot: false, lastSeen: Date.now(), badgesStart: [], badgesEnd: [], chatSettings: { textSize: 16, cornerSize: 16 } };
   } else {
     u = {
       id: userId,
@@ -1388,7 +1437,7 @@ function ensureLocalUser(userId, fallback) {
       avatar: g.avatar || null,
       about: g.about || '',
       phone: '', birthday: '',
-      friends: [], gifts: [], stars: 0,
+      friends: [], gifts: [], profileGifts: [], stars: 0,
       pass: '',
       isBot: false,
       lastSeen: g.lastSeen || Date.now(),
@@ -1471,6 +1520,8 @@ function migrateDB(){
     if(typeof u.name !== 'string') u.name = 'User';
     if(!Array.isArray(u.friends)) u.friends = [];
     if(!Array.isArray(u.gifts)) u.gifts = [];
+    // === НОВОЕ: подарки вокруг аватарки ===
+    if(!Array.isArray(u.profileGifts)) u.profileGifts = [];
     if(!Array.isArray(u.playlist)) u.playlist = [];
     if(!Array.isArray(u.badgesStart)) u.badgesStart = [];
     if(!Array.isArray(u.badgesEnd)) u.badgesEnd = [];
@@ -1622,13 +1673,22 @@ function onlineText(user){
   return 'был(а) ' + fmtTime(ts);
 }
 
-function touch(){ if(me) me.lastSeen = Date.now(); if (me) broadcastProfile(); }
+/* ==== ТОЧЕЧНЫЙ ТРОТТЛИНГ BROADCAST (не более 1 в 10 сек) ==== */
+function touch(){
+  if (!me) return;
+  me.lastSeen = Date.now();
+  const now = Date.now();
+  if (now - lastBroadcastTs > 10000) {
+    lastBroadcastTs = now;
+    broadcastProfile();
+  }
+}
 
 function ensureBots(){
   let bot1 = DB.users.find(u => u.id === BOT_ID);
-  if(!bot1){ DB.users.push({ id:BOT_ID, name:'NUMBER', username:'numbercode_bot', about:'Официальный бот Lipogram', phone:'', birthday:'', avatar:'svg:4', pass:'', friends:[], isBot:true, lastSeen:Date.now(), createdAt:Date.now() }); } 
+  if(!bot1){ DB.users.push({ id:BOT_ID, name:'NUMBER', username:'numbercode_bot', about:'Официальный бот Lipogram', phone:'', birthday:'', avatar:'svg:4', pass:'', friends:[], gifts:[], profileGifts:[], isBot:true, lastSeen:Date.now(), createdAt:Date.now() }); } 
   else if (bot1.name === 'NUMBER-CODE BOT') { bot1.name = 'NUMBER'; }
-  if(!DB.users.find(u => u.id === STICKERS_BOT_ID)){ DB.users.push({ id:STICKERS_BOT_ID, name:'Stickers', username:'stickers_bot', about:'Создавайте стикерпаки', phone:'', birthday:'', avatar:'svg:10', pass:'', friends:[], isBot:true, lastSeen:Date.now(), createdAt:Date.now() }); }
+  if(!DB.users.find(u => u.id === STICKERS_BOT_ID)){ DB.users.push({ id:STICKERS_BOT_ID, name:'Stickers', username:'stickers_bot', about:'Создавайте стикерпаки', phone:'', birthday:'', avatar:'svg:10', pass:'', friends:[], gifts:[], profileGifts:[], isBot:true, lastSeen:Date.now(), createdAt:Date.now() }); }
   save();
 }
 
@@ -1743,6 +1803,27 @@ function avatarWithStatus(value, name, size, square, online){
   return `<div class="av-wrap">${av}<span class="online-dot"></span></div>`;
 }
 
+/* ==== НОВОЕ: рендер аватара с подарками вокруг ==== */
+function renderAvatarWithGifts(u, size){
+  size = size || 200;
+  const coreSize = 90;
+  const gifts = (u.gifts || []).filter(g => (u.profileGifts || []).includes(g.id));
+  const n = gifts.length;
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = n > 0 ? (size / 2 - 28) : 0;
+  let html = `<div class="avatar-with-gifts" style="width:${size}px;height:${size}px;">`;
+  html += `<div class="core-avatar">${avatarHTML(u.avatar, u.name, coreSize)}</div>`;
+  gifts.forEach((g, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    const x = cx + R * Math.cos(angle) - 16;
+    const y = cy + R * Math.sin(angle) - 16;
+    html += `<img src="${g.giftImage}" class="gift-frame-item" style="left:${x}px;top:${y}px;" onclick="event.stopPropagation();viewGiftDetails('${u.id}','${g.id}')" title="${escapeHtml(g.giftName)}">`;
+  });
+  html += `</div>`;
+  return html;
+}
+
 function showScreen(id){ $$('.screen').forEach(s => s.classList.toggle('active', s.id === id)); }
 
 function switchAuthTab(tab){
@@ -1763,7 +1844,6 @@ function handleRegister(){
     if (existing.pass === pass) { me = existing; DB.session = me.id; me.lastSeen = Date.now(); ensureBotChat(); save(); resetAuthForms(); enterApp(); initPubNub(); toast('С возвращением!'); return; }
     return toast('Этот юзернейм уже занят');
   }
-  // Also check global (other devices)
   const globalClash = Object.values(globalUsersCache).find(g => String(g.username || '').toLowerCase() === username);
   if (globalClash) return toast('Этот юзернейм уже занят');
   if(name.length < 2) return toast('Введите имя');
@@ -1771,7 +1851,7 @@ function handleRegister(){
   if(pass.length < 4) return toast('Пароль — минимум 4 символа');
   const user = {
     id:uid(), name, username, about:'', phone:'', birthday:bday||'',
-    avatar:pendingRegAvatar||null, banner:null, playlist:[], gifts:[], stars:100,
+    avatar:pendingRegAvatar||null, banner:null, playlist:[], gifts:[], profileGifts:[], stars:100,
     badgesStart:[], badgesEnd:[], savedStickers:[], blacklist:[],
     chatSettings:{textSize:16,cornerSize:16,themeId:'t1'},
     botNumberGiven:false, pass, friends:[], lastSeen:Date.now(), createdAt:Date.now()
@@ -2090,7 +2170,7 @@ function renderProfile(){
   const gifts = me.gifts || [];
   let giftsGridHTML = '';
   if(gifts.length > 0){
-    giftsGridHTML = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;" onclick="viewGiftDetails('${me.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
+    giftsGridHTML = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${me.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}${(me.profileGifts||[]).includes(g.id) ? '<span style="position:absolute;top:4px;left:4px;font-size:12px;">📌</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
     const rem = gifts.length % 3;
     if(rem !== 0) for(let i = 0; i < 3 - rem; i++) giftsGridHTML += `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
   } else giftsGridHTML = `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
@@ -2101,7 +2181,7 @@ function renderProfile(){
       <div class="info-icon">${SVG.pencil}</div><div class="cell-label">Редактировать</div><div class="cell-arrow">${SVG.chevron}</div>
     </div></div>
     <div class="profile-card">
-      ${avatarHTML(me.avatar, me.name, 90)}
+      ${renderAvatarWithGifts(me, 200)}
       <div class="p-name">${nameHTML(me.name, me.username, 22)}</div>
       <div class="p-username">@${escapeHtml(me.username)}</div>
       <div class="p-stats">
@@ -2147,7 +2227,7 @@ function viewUserProfile(userId){
   const gifts = csG ? (u.gifts || []) : [];
   let gg = '';
   if(gifts.length > 0){
-    gg = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;" onclick="viewGiftDetails('${u.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
+    gg = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${u.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
     const rem = gifts.length % 3;
     if(rem !== 0) for(let i = 0; i < 3 - rem; i++) gg += `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
   } else gg = `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
@@ -2158,7 +2238,7 @@ function viewUserProfile(userId){
   box.innerHTML = `
     ${bannerHTML}
     <div class="profile-card">
-      ${avatarHTML(u.avatar, u.name, 90)}
+      ${renderAvatarWithGifts(u, 200)}
       <div class="p-name">${nameHTML(u.name, u.username, 22)}</div>
       <div class="p-username">@${escapeHtml(u.username)}</div>
       <div class="p-stats">
@@ -2216,11 +2296,13 @@ document.addEventListener('visibilitychange', () => { if(!currentAudio || !curre
 function handlePageLeave(){ if(currentAudio && currentPlayingId){ if(!currentAudio.paused) currentAudio.pause(); musicPaused = true; pausedByVisibility = true; saveMusicState(); } }
 window.addEventListener('pagehide', handlePageLeave); window.addEventListener('beforeunload', handlePageLeave);
 
+/* ==== КНОПКИ ДЛЯ ПОДАРКА ==== */
 function viewGiftDetails(userId, giftId){
   const u = DB.users.find(x => x.id === userId); if(!u) return;
   const g = (u.gifts || []).find(x => x.id === giftId); if(!g) return;
   const sender = DB.users.find(x => x.id === g.fromId);
   const isMine = u.id === me.id;
+  const onAvatar = (u.profileGifts || []).includes(giftId);
   const sellPrice = Math.floor((g.price || 15) * 0.85);
   const box = $('#account-content');
   const title = $('#modal-account-title'); if(title) title.textContent = g.isNFT ? 'NFT' : 'Подарок';
@@ -2273,10 +2355,24 @@ function viewGiftDetails(userId, giftId){
     `;
   }
 
+  let actionsBlock = '';
+  if (isMine) {
+    actionsBlock = `<div class="gift-actions">
+      <button class="btn btn-ghost" onclick="toggleGiftOnProfile('${userId}', '${giftId}')">
+        ${onAvatar ? '📍 Убрать с аватарки' : '📌 Поставить на аватарку'}
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-account'); openTransferGift('${userId}', '${giftId}')">
+        🎁 Передать другому
+      </button>
+      ${!g.isNFT ? `<button class="btn btn-primary" onclick="sellGift('${userId}', '${giftId}')">💰 Продать за ${sellPrice} звезд</button>` : ''}
+    </div>`;
+  }
+
   box.innerHTML = `
     <div style="text-align:center;padding:10px 0 20px;">
       <img src="${g.giftImage}" decoding="async" style="width:100px;height:100px;object-fit:contain;margin:0 auto 12px;">
       <div style="font-size:18px;font-weight:700;">${escapeHtml(g.giftName)}</div>
+      ${onAvatar ? '<div style="font-size:11px;color:var(--accent-primary);margin-top:4px;">📌 На аватарке</div>' : ''}
     </div>
     ${nftBlock}
     <div class="section-title">Сообщение</div>
@@ -2288,9 +2384,134 @@ function viewGiftDetails(userId, giftId){
         <div class="li-main"><div class="li-name">${sender ? nameHTML(sender.name, sender.username, 16) : 'Неизвестный'}</div></div>
       </div>
     </div>
-    ${isMine && !g.isNFT ? `<button class="btn btn-primary" onclick="sellGift('${userId}', '${giftId}')" style="margin-top:16px;">Продать за ${sellPrice} звезд</button>` : ''}
-    ${isMine && g.isNFT ? `<div style="text-align:center;margin-top:16px;padding:12px;background:rgba(239,68,68,0.08);border-radius:12px;font-size:13px;color:var(--danger);font-weight:500;">NFT нельзя продать или обменять</div>` : ''}`;
+    ${actionsBlock}
+    ${isMine && g.isNFT ? `<div style="text-align:center;margin-top:8px;padding:12px;background:rgba(239,68,68,0.08);border-radius:12px;font-size:13px;color:var(--danger);font-weight:500;">NFT нельзя продать, но можно передать</div>` : ''}`;
   openModal('modal-account');
+}
+
+/* ==== НОВОЕ: поставить / убрать подарок с аватарки ==== */
+function toggleGiftOnProfile(userId, giftId){
+  const u = DB.users.find(x => x.id === userId);
+  if (!u || u.id !== me.id) return toast('Только свой подарок');
+  if (!u.profileGifts) u.profileGifts = [];
+  const idx = u.profileGifts.indexOf(giftId);
+  let action;
+  if (idx > -1) { u.profileGifts.splice(idx, 1); action = 'Убрано с аватарки'; }
+  else {
+    if (u.profileGifts.length >= 8) return toast('Максимум 8 подарков на аватарке');
+    u.profileGifts.push(giftId); action = 'Поставлено на аватарку';
+  }
+  save();
+  closeModal('modal-account');
+  renderProfile();
+  broadcastProfile();
+  toast(action);
+}
+
+/* ==== НОВОЕ: модалка передачи подарка ==== */
+function openTransferGift(userId, giftId) {
+  const u = DB.users.find(x => x.id === userId);
+  if (!u || u.id !== me.id) return toast('Только свой подарок');
+  const g = (u.gifts || []).find(x => x.id === giftId);
+  if (!g) return;
+  const content = $('#gift-transfer-content');
+  if (!content) return;
+  
+  // Собираем возможных получателей: друзья + все локальные + кэш
+  const ids = new Set();
+  const recipients = [];
+  me.friends.forEach(fid => {
+    const f = DB.users.find(x => x.id === fid);
+    if (f && f.id !== me.id) { ids.add(f.id); recipients.push(f); }
+  });
+  DB.users.forEach(x => {
+    if (x.id !== me.id && !x.isBot && !ids.has(x.id)) { ids.add(x.id); recipients.push(x); }
+  });
+  Object.values(globalUsersCache).forEach(g => {
+    if (g.id !== me.id && !ids.has(g.id)) { ids.add(g.id); recipients.push({ id: g.id, name: g.name || 'User', username: g.username || '', avatar: g.avatar || null, _remote: true }); }
+  });
+  
+  content.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <img src="${g.giftImage}" style="width:80px;height:80px;object-fit:contain;">
+      <div style="font-size:16px;font-weight:700;margin-top:8px;">${escapeHtml(g.giftName)}</div>
+    </div>
+    <div class="input-wrap" style="margin-bottom:16px;">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-secondary);fill:none;stroke-width:2;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="transfer-search" placeholder="Поиск..." oninput="filterTransferRecipients(this.value, '${giftId}')" style="padding:12px 0;">
+    </div>
+    <div id="transfer-recipients-list" style="max-height:400px;overflow-y:auto;"></div>
+  `;
+  renderTransferRecipients(recipients, giftId);
+  openModal('modal-gift-transfer');
+}
+
+function renderTransferRecipients(recipients, giftId) {
+  const list = $('#transfer-recipients-list');
+  if (!list) return;
+  if (!recipients.length) {
+    list.innerHTML = `<div style="text-align:center;color:var(--text-secondary);padding:20px;">Нет доступных получателей</div>`;
+    return;
+  }
+  list.innerHTML = `<div class="group">${recipients.map(u => `
+    <div class="list-item" onclick="confirmTransferGift('${u.id}', '${giftId}')">
+      ${avatarHTML(u.avatar, u.name, 40)}
+      <div class="li-main">
+        <div class="li-top"><span class="li-name">${nameHTML(u.name, u.username, 16)}</span></div>
+        <div class="li-bottom"><span class="li-preview">@${escapeHtml(u.username)}</span></div>
+      </div>
+      <div class="cell-arrow">${SVG.chevron}</div>
+    </div>`).join('')}</div>`;
+}
+
+function filterTransferRecipients(q, giftId) {
+  q = (q || '').trim().toLowerCase();
+  const ids = new Set();
+  const all = [];
+  const add = (u) => { if (!u || ids.has(u.id) || u.id === me.id || u.isBot) return; ids.add(u.id); all.push(u); };
+  me.friends.forEach(fid => add(DB.users.find(x => x.id === fid)));
+  DB.users.forEach(u => add(u));
+  Object.values(globalUsersCache).forEach(g => add({ id: g.id, name: g.name || 'User', username: g.username || '', avatar: g.avatar || null, _remote: true }));
+  const filtered = q ? all.filter(u => (u.username||'').toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q)) : all;
+  renderTransferRecipients(filtered, giftId);
+}
+
+/* ==== НОВОЕ: подтверждение передачи ==== */
+function confirmTransferGift(recipientId, giftId) {
+  const idx = me.gifts.findIndex(g => g.id === giftId);
+  if (idx === -1) return toast('Подарок не найден');
+  const g = me.gifts[idx];
+  const recipient = DB.users.find(u => u.id === recipientId) || ensureLocalUser(recipientId);
+  if (!recipient) return toast('Получатель не найден');
+  if (recipient.id === me.id) return toast('Нельзя передать себе');
+  
+  // Убрать с аватарки
+  if (me.profileGifts) me.profileGifts = me.profileGifts.filter(id => id !== giftId);
+  // Удалить у меня
+  me.gifts.splice(idx, 1);
+  
+  if (!recipient.gifts) recipient.gifts = [];
+  const newGift = Object.assign({}, g, { ts: Date.now() });
+  if (g.isNFT) {
+    newGift.nftCurrentOwnerId = recipient.id;
+    newGift.nftAcquiredAt = Date.now();
+    const original = DB.customGifts.find(x => x.id === g.giftId);
+    if (original) original.nftCurrentOwnerId = recipient.id;
+  }
+  recipient.gifts.push(newGift);
+  
+  // Запись в чат
+  let c = DB.chats.find(x => x.type === 'chat' && !x.name && x.members.includes(me.id) && x.members.includes(recipient.id));
+  if (!c) { c = { id: uid(), type: 'chat', name: '', avatar: null, owner: me.id, members: [me.id, recipient.id], messages: [], createdAt: Date.now() }; DB.chats.push(c); }
+  const giftMsg = { id: uid(), uid: me.id, type: 'gift', giftId: g.giftId, giftImage: g.giftImage, giftName: g.giftName, price: g.price, text: g.message || '', ts: Date.now(), nft: !!g.isNFT, transferred: true };
+  c.messages.push(giftMsg);
+  publishPersonalMessage(c, giftMsg);
+  
+  save();
+  closeModal('modal-account');
+  closeModal('modal-gift-transfer');
+  if (currentPage === 'profile') renderProfile();
+  toast('Подарок передан @' + recipient.username);
 }
 
 function sellGift(userId, giftId){
@@ -2299,7 +2520,9 @@ function sellGift(userId, giftId){
   const g = u.gifts[idx];
   if(g.isNFT) return toast('NFT нельзя продать');
   const sellPrice = Math.floor((g.price || 15) * 0.85);
-  me.stars = (me.stars || 0) + sellPrice; u.gifts.splice(idx, 1);
+  me.stars = (me.stars || 0) + sellPrice;
+  if (me.profileGifts) me.profileGifts = me.profileGifts.filter(id => id !== giftId);
+  u.gifts.splice(idx, 1);
   save(); closeModal('modal-account'); renderProfile(); toast(`Продано за ${sellPrice} звезд`);
 }
 
@@ -2458,7 +2681,6 @@ function confirmSendGift(){
     const card = document.querySelector(`#gift-catalog-grid .gift-shop-item[data-gift-id="${gift.id}"]`);
     if (card && stockSource.stock <= 0) { card.style.opacity = '0.35'; card.style.pointerEvents = 'none'; }
   } else if (currentPackId) { markGiftCatalogDirty(); }
-  // Отправить через PubNub
   publishPersonalMessage(c, giftMsg);
   if(currentChatId === c.id) renderMessages(true); else if(currentPage === 'chats') renderChats();
   if(recipient.id === me.id){ toast(gift.isNFT ? 'NFT получен' : 'Подарок отправлен себе'); renderProfile(); } else toast(gift.isNFT ? 'NFT отправлен' : 'Подарок отправлен');
@@ -2610,6 +2832,7 @@ function saveChatSettings(){ const ts = parseInt($('#cs-text-size').value); cons
 
 function emptyHTML(icon, title, text){ const icons = { chat:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>', channel:'<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>', friends:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' }; return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:var(--text-secondary);"><div style="width:80px;height:80px;border-radius:50%;background:var(--surface-1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--text-secondary);fill:none;stroke-width:2;">${icons[icon] || ''}</svg></div><h3 style="font-size:18px;color:var(--text-primary);margin-bottom:8px;font-weight:600;">${title}</h3><p style="font-size:14px;">${text}</p></div>`; }
 
+/* ==== ОТКРЫТИЕ ЧАТА С ПОДПИСКОЙ НА PUBNUB ==== */
 function openChat(id){
   const c = DB.chats.find(x => x.id === id); if(!c) return;
   currentChatId = id; touch();
@@ -2642,7 +2865,6 @@ function openChat(id){
   else { actBox.innerHTML = ''; }
   document.getElementById('emoji-panel').classList.remove('show');
   renderMessages(true); showScreen('scr-chat');
-  // Подписка на канал (для групп)
   if (pubnub && c.type === 'channel') {
     try { pubnub.subscribe({ channels: [CH_CHANNEL_PREFIX + c.id] }); } catch(e){}
   }
@@ -2653,32 +2875,58 @@ function closeChat(){ currentChatId = null; const bp = $('#bot-panel'); if(bp){ 
 function toggleChannelNotifications(){ if(!currentChatId) return; if(!me.mutedChannels) me.mutedChannels = []; const idx = me.mutedChannels.indexOf(currentChatId); if(idx > -1) me.mutedChannels.splice(idx, 1); else me.mutedChannels.push(currentChatId); save(); openChat(currentChatId); }
 function toggleSendAsChannel(){ sendAsChannel = !sendAsChannel; const btn = document.getElementById('send-as-toggle'); btn.textContent = sendAsChannel ? 'От имени: Канал' : 'От имени: Профиль'; btn.style.background = sendAsChannel ? 'var(--accent-primary)' : 'var(--surface-1)'; }
 
+/* ==== ЕДИНАЯ ФУНКЦИЯ РЕНДЕРА ОДНОГО СООБЩЕНИЯ ==== */
+function renderSingleMessage(c, m) {
+  const isChannelMsg = m.isChannelMsg; let mine = m.uid === me.id; if(isChannelMsg) mine = false;
+  const author = DB.users.find(u => u.id === m.uid); const showAuthor = (c.type === 'channel' && !mine) || isChannelMsg;
+  const cs = me.chatSettings || { textSize:16, cornerSize:16 };
+
+  if(m.type === 'phone_request'){
+    const isTarget = c.members.find(mem => mem !== m.uid && mem !== BOT_ID);
+    if(me.id === isTarget){
+      if(m.status) return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;">📞 Заявка ${m.status === 'accepted' ? 'принята' : 'отклонена'}</div>`;
+      return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:16px;border-radius:16px;text-align:center;max-width:100%;"><div style="font-size:24px;margin-bottom:8px;">📞</div><div style="font-weight:600;font-size:14px;margin-bottom:4px;">Заявка на номер</div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">От: ${author ? nameHTML(author.name, author.username, 14) : '—'}</div><div style="display:flex;gap:8px;justify-content:center;"><button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px;" onclick="acceptPhoneDrop('${c.id}', '${m.id}')">Принять</button><button class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;" onclick="declinePhoneDrop('${c.id}', '${m.id}')">Отклонить</button></div></div>`;
+    }
+    return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;">📞 Заявка</div>`;
+  }
+  if(m.type === 'gift'){
+    const sellPrice = Math.floor((m.price || 15) * 0.85);
+    return `<div class="msg gift-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><div class="gift-bubble"><img src="${m.giftImage}" decoding="async" class="gift-bubble-img"><div class="gift-bubble-title">${escapeHtml(m.giftName)}</div>${m.text ? `<div class="gift-bubble-text">"${escapeHtml(m.text)}"</div>` : ''}<div class="gift-bubble-hint">${m.nft ? 'NFT' : (m.transferred ? 'Передан' : 'Продать за ' + sellPrice + ' звезд')}</div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  }
+  if(m.type === 'image') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:4px;background:${mine ? 'var(--accent-primary)' : 'var(--surface-1)'};"><img src="${m.image}" decoding="async" style="max-width:100%;border-radius:14px;display:block;max-height:300px;object-fit:cover;"></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  if(m.type === 'file') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:12px;"><div class="file-bubble"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">${escapeHtml(m.fileName)}</div><div class="file-size">${m.fileSize}</div></div><a href="${m.image}" download="${escapeHtml(m.fileName)}" class="file-download">↓</a></div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  if(m.type === 'sticker') return `<div class="msg sticker-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><img src="${m.image}" decoding="async" class="sticker-img" onclick="openStickerView('${m.image}', '${escapeHtml(m.stickerName)}')"><div class="sticker-name">${escapeHtml(m.stickerName)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  const radiusStyle = `border-top-left-radius:${cs.cornerSize}px;border-top-right-radius:${cs.cornerSize}px;border-bottom-left-radius:${mine ? cs.cornerSize : 4}px;border-bottom-right-radius:${mine ? 4 : cs.cornerSize}px`;
+  return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="font-size:${cs.textSize}px;${radiusStyle}">${escapeHtml(m.text)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+}
+
+/* ==== ПЕРЕРИСОВКА ВСЕГО ЧАТА (только при открытии) ==== */
 function renderMessages(scroll){
   const c = DB.chats.find(x => x.id === currentChatId); if(!c) return;
-  const box = $('#messages'); const cs = me.chatSettings || { textSize:16, cornerSize:16 };
+  const box = $('#messages');
   if(!c.messages.length){ box.innerHTML = `<div class="empty-chat">${c.type === 'channel' ? 'Нет публикаций' : 'Начни разговор'}</div>`; return; }
-  box.innerHTML = c.messages.map(m => {
-    const isChannelMsg = m.isChannelMsg; let mine = m.uid === me.id; if(isChannelMsg) mine = false;
-    const author = DB.users.find(u => u.id === m.uid); const showAuthor = (c.type === 'channel' && !mine) || isChannelMsg;
-    if(m.type === 'phone_request'){
-      const isTarget = c.members.find(mem => mem !== m.uid && mem !== BOT_ID);
-      if(me.id === isTarget){
-        if(m.status) return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;">📞 Заявка ${m.status === 'accepted' ? 'принята' : 'отклонена'}</div>`;
-        return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:16px;border-radius:16px;text-align:center;max-width:100%;"><div style="font-size:24px;margin-bottom:8px;">📞</div><div style="font-weight:600;font-size:14px;margin-bottom:4px;">Заявка на номер</div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">От: ${author ? nameHTML(author.name, author.username, 14) : '—'}</div><div style="display:flex;gap:8px;justify-content:center;"><button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px;" onclick="acceptPhoneDrop('${c.id}', '${m.id}')">Принять</button><button class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;" onclick="declinePhoneDrop('${c.id}', '${m.id}')">Отклонить</button></div></div>`;
-      }
-      return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;">📞 Заявка</div>`;
-    }
-    if(m.type === 'gift'){
-      const sellPrice = Math.floor((m.price || 15) * 0.85);
-      return `<div class="msg gift-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><div class="gift-bubble"><img src="${m.giftImage}" decoding="async" class="gift-bubble-img"><div class="gift-bubble-title">${escapeHtml(m.giftName)}</div>${m.text ? `<div class="gift-bubble-text">"${escapeHtml(m.text)}"</div>` : ''}<div class="gift-bubble-hint">${m.nft ? 'NFT' : 'Продать за ' + sellPrice + ' звезд'}</div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-    }
-    if(m.type === 'image') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:4px;background:${mine ? 'var(--accent-primary)' : 'var(--surface-1)'};"><img src="${m.image}" decoding="async" style="max-width:100%;border-radius:14px;display:block;max-height:300px;object-fit:cover;"></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-    if(m.type === 'file') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:12px;"><div class="file-bubble"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">${escapeHtml(m.fileName)}</div><div class="file-size">${m.fileSize}</div></div><a href="${m.image}" download="${escapeHtml(m.fileName)}" class="file-download">↓</a></div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-    if(m.type === 'sticker') return `<div class="msg sticker-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><img src="${m.image}" decoding="async" class="sticker-img" onclick="openStickerView('${m.image}', '${escapeHtml(m.stickerName)}')"><div class="sticker-name">${escapeHtml(m.stickerName)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-    const radiusStyle = `border-top-left-radius:${cs.cornerSize}px;border-top-right-radius:${cs.cornerSize}px;border-bottom-left-radius:${mine ? cs.cornerSize : 4}px;border-bottom-right-radius:${mine ? 4 : cs.cornerSize}px`;
-    return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="font-size:${cs.textSize}px;${radiusStyle}">${escapeHtml(m.text)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-  }).join('');
+  // Рендерим последние 100 сообщений для скорости
+  const slice = c.messages.length > 100 ? c.messages.slice(-100) : c.messages;
+  const frag = document.createDocumentFragment();
+  const tmp = document.createElement('div');
+  tmp.innerHTML = slice.map(m => renderSingleMessage(c, m)).join('');
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  box.innerHTML = '';
+  box.appendChild(frag);
   if(scroll !== false) box.scrollTop = box.scrollHeight;
+}
+
+/* ==== ДОБАВИТЬ ОДНО СООБЩЕНИЕ БЕЗ ПЕРЕРИСОВКИ ==== */
+function appendMessageToChat(c, m){
+  const box = $('#messages'); if(!box) return;
+  const empty = box.querySelector('.empty-chat');
+  if (empty) empty.remove();
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderSingleMessage(c, m);
+  const el = wrapper.firstElementChild;
+  if (!el) return;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
 }
 
 function sendMessage(){
@@ -2686,12 +2934,13 @@ function sendMessage(){
   if(me.muted){ if(me.mutedUntil > 0 && Date.now() > me.mutedUntil){ me.muted = false; me.mutedUntil = 0; save(); } else return toast('Вы заглушены'); }
   const c = DB.chats.find(x => x.id === currentChatId); if(!c) return;
   if(c.type === 'channel' && c.owner !== me.id && c.owner !== me.username && !(c.admins||[]).includes(me.id)) return toast('Только админ');
-  if(isSk1te(me)){
-    if(text === '/help'){ c.messages.push({ id:uid(), uid:me.id, text:'/veri\n/unver\n/mute\n/unmute\n/spam\n/sereychik\n/stars', ts:Date.now() }); save(); renderMessages(true); input.value = ''; return; }
-    if(text === '/sereychik'){ toggleSereychik(); input.value = ''; return; }
-    if(text.startsWith('/stars ')){ const p = text.split(' '); const un = (p[1]||'').replace('@','').toLowerCase(); const amt = parseInt(p[2]); if(!un || isNaN(amt)) return toast('Ошибка'); const target = DB.users.find(u => u.username === un); if(!target) return toast('Не найден'); target.stars = (target.stars||0) + amt; save(); renderAll(); toast(`Выдано ${amt}`); input.value = ''; return; }
-    if(text.startsWith('/dropnumber')){ const p = text.split(' '); if(p.length < 2) return toast('Ошибка'); const phone = p.slice(1).join(' '); const other = chatOtherUser(c); if(!other) return toast('Только в личке'); c.messages.push({ id:uid(), uid:me.id, type:'phone_request', phone, ts:Date.now() }); save(); renderMessages(true); input.value = ''; return; }
+
+  // === ОБРАБОТКА КОМАНД ===
+  if (text.startsWith('/')) {
+    const handled = processCommand(text, c);
+    if (handled) { input.value = ''; return; }
   }
+
   if(c.members.includes(STICKERS_BOT_ID) && text.toLowerCase() === '/start'){ input.value = ''; if(me.stickerState !== 'awaiting_name' && me.stickerState !== 'awaiting_image') botStartStickers(); return; }
   const msg = { id:uid(), uid:sendAsChannel ? c.id : me.id, text, ts:Date.now(), isChannelMsg:sendAsChannel };
   c.messages.push(msg);
@@ -2699,13 +2948,154 @@ function sendMessage(){
     me.botStartCounter = (me.botStartCounter || 0) + 1;
     if(me.stickerState === 'awaiting_name'){
       me.stickerName = text; me.stickerState = 'awaiting_image'; save();
-      setTimeout(() => { if(!DB.chats.find(x => x.id === currentChatId)) return; c.messages.push({ id:uid(), uid:STICKERS_BOT_ID, text:`Жду изображение для "${text}".`, ts:Date.now() }); save(); if(currentChatId === c.id) renderMessages(true); }, 600);
+      setTimeout(() => { if(!DB.chats.find(x => x.id === currentChatId)) return; const botMsg = { id:uid(), uid:STICKERS_BOT_ID, text:`Жду изображение для "${text}".`, ts:Date.now() }; c.messages.push(botMsg); save(); if(currentChatId === c.id) appendMessageToChat(c, botMsg); }, 600);
     }
   }
-  touch(); save(); input.value = ''; renderMessages(true);
-  // Отправка через PubNub
+  touch(); save(); input.value = '';
+
+  // ТОЧЕЧНОЕ ОБНОВЛЕНИЕ — только добавляем новое, не перерисовываем всё
+  appendMessageToChat(c, msg);
+
   if (sendAsChannel && c.type === 'channel') publishChannelMessage(c, msg);
   else if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, msg);
+}
+
+/* ==== КОМАНДЫ ==== */
+function processCommand(text, chat) {
+  const parts = text.trim().split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const isChannelOwner = chat.type === 'channel' && (chat.owner === me.id || (chat.admins || []).includes(me.id));
+  const isChatOwner = chat.type === 'chat' && chat.owner === me.id;
+  const canAdmin = isSk1te(me) || isChannelOwner;
+
+  const findTarget = (arg) => {
+    if (!arg) return null;
+    const un = String(arg).replace(/^@+/, '').toLowerCase();
+    let u = DB.users.find(x => String(x.username || '').toLowerCase() === un);
+    if (!u) {
+      const g = Object.values(globalUsersCache).find(g => String(g.username || '').toLowerCase() === un);
+      if (g) u = ensureLocalUser(g.id, g);
+    }
+    return u;
+  };
+
+  const pushSystem = (t) => {
+    const msg = { id: uid(), uid: me.id, text: t, ts: Date.now() };
+    chat.messages.push(msg);
+    save();
+    if (currentChatId === chat.id) appendMessageToChat(chat, msg);
+  };
+
+  switch(cmd) {
+    case '/help': {
+      const helpText = isSk1te(me) ?
+        '📋 Команды:\n/veri <@user> — выдать галочку\n/unver <@user> — снять галочки\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить\n/stars <@user> <n> — выдать звёзды\n/gift <@user> <giftId> — передать подарок\n/sereychik — зайчик' :
+        (isChannelOwner ? '📋 Команды (админ канала):\n/mute <@user> [мин] — замутить\n/unmute <@user> — размутить' : '❌ Недостаточно прав. /help доступно только админам');
+      pushSystem(helpText);
+      return true;
+    }
+
+    case '/veri': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      if (!target) { toast('❌ Пользователь не найден'); return true; }
+      const u = DB.users.find(x => x.id === target.id) || ensureLocalUser(target.id, target);
+      if (!u) { toast('❌ Ошибка'); return true; }
+      if (!u.badgesStart) u.badgesStart = [];
+      if (u.badgesStart.length > 0) { toast('Галочка уже есть'); return true; }
+      u.badgesStart.push('L.png');
+      save(); broadcastProfile();
+      pushSystem('✅ @' + u.username + ' — выдана галочка');
+      return true;
+    }
+
+    case '/unver': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      if (!target) { toast('❌ Пользователь не найден'); return true; }
+      const u = DB.users.find(x => x.id === target.id);
+      if (!u) { toast('❌ Ошибка'); return true; }
+      u.badgesStart = []; u.badgesEnd = [];
+      save(); broadcastProfile();
+      pushSystem('✅ Галочки сняты у @' + u.username);
+      return true;
+    }
+
+    case '/mute': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      if (!target) { toast('❌ Пользователь не найден'); return true; }
+      const u = DB.users.find(x => x.id === target.id);
+      if (!u) { toast('❌ Ошибка'); return true; }
+      const min = Math.max(1, parseInt(parts[2]) || 60);
+      u.muted = true;
+      u.mutedUntil = Date.now() + min * 60000;
+      save();
+      pushSystem('🔇 @' + u.username + ' — замучен на ' + min + ' мин');
+      return true;
+    }
+
+    case '/unmute': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      if (!target) { toast('❌ Пользователь не найден'); return true; }
+      const u = DB.users.find(x => x.id === target.id);
+      if (!u) { toast('❌ Ошибка'); return true; }
+      u.muted = false; u.mutedUntil = 0;
+      save();
+      pushSystem('🔊 @' + u.username + ' — размучен');
+      return true;
+    }
+
+    case '/stars': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      const amt = parseInt(parts[2]);
+      if (!target) { toast('❌ Пользователь не найден'); return true; }
+      if (isNaN(amt)) { toast('❌ Укажите количество: /stars @user 100'); return true; }
+      const u = DB.users.find(x => x.id === target.id);
+      if (!u) { toast('❌ Ошибка'); return true; }
+      u.stars = Math.max(0, (u.stars || 0) + amt);
+      save();
+      pushSystem('⭐ @' + u.username + ' — выдано ' + amt + ' звёзд');
+      return true;
+    }
+
+    case '/gift': {
+      if (!canAdmin) return false;
+      const target = findTarget(parts[1]);
+      const giftId = parts[2];
+      if (!target || !giftId) { toast('❌ Использование: /gift @user giftId'); return true; }
+      if (target.id !== me.id) {
+        // Передача от меня к target
+        const idx = me.gifts ? me.gifts.findIndex(g => g.id === giftId) : -1;
+        if (idx === -1) { toast('❌ У вас нет подарка с id ' + giftId); return true; }
+        confirmTransferGift(target.id, giftId);
+      } else toast('❌ Нельзя себе');
+      return true;
+    }
+
+    case '/sereychik': {
+      toggleSereychik();
+      return true;
+    }
+
+    case '/dropnumber': {
+      if (!isSk1te(me)) return false;
+      const phone = parts.slice(1).join(' ');
+      if (!phone) { toast('Укажите номер: /dropnumber +7...'); return true; }
+      const other = chatOtherUser(chat);
+      if (!other) { toast('❌ Только в личке'); return true; }
+      const phoneMsg = { id: uid(), uid: me.id, type: 'phone_request', phone, ts: Date.now() };
+      chat.messages.push(phoneMsg);
+      save();
+      if (currentChatId === chat.id) appendMessageToChat(chat, phoneMsg);
+      return true;
+    }
+
+    default:
+      return false;
+  }
 }
 
 function acceptPhoneDrop(chatId, msgId){ const c = DB.chats.find(x => x.id === chatId); if(!c) return; const msg = c.messages.find(m => m.id === msgId); if(!msg) return; if(me.phone){ toast('Уже есть'); msg.status = 'declined'; } else { me.phone = msg.phone; me.botNumberGiven = true; msg.status = 'accepted'; } save(); renderMessages(true); renderProfile(); renderSettings(); toast('Номер получен'); }
@@ -2719,14 +3109,21 @@ function handleChatFile(input){
       if(!compressed) return; const c = DB.chats.find(x => x.id === currentChatId); if(!c) return;
       if(c.members.includes(STICKERS_BOT_ID) && me.stickerState === 'awaiting_image'){
         me.stickerState = 'none'; save();
-        c.messages.push({ id:uid(), uid:me.id, type:'image', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:compressed, ts:Date.now() });
-        setTimeout(() => { if(!DB.chats.find(x => x.id === currentChatId)) return; c.messages.push({ id:uid(), uid:STICKERS_BOT_ID, type:'sticker', image:compressed, stickerName:me.stickerName || 'Стикер', text:`Пак создан!`, ts:Date.now() }); me.stickerName = ''; save(); if(currentChatId === c.id) renderMessages(true); }, 1000);
-      } else { const m = { id:uid(), uid:sendAsChannel ? c.id : me.id, type:'image', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:compressed, ts:Date.now(), isChannelMsg:sendAsChannel }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); else if (c.type === 'channel' && sendAsChannel) publishChannelMessage(c, m); }
-      touch(); save(); if(currentChatId === c.id) renderMessages(true);
+        const imgMsg = { id:uid(), uid:me.id, type:'image', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:compressed, ts:Date.now() };
+        c.messages.push(imgMsg);
+        if (currentChatId === c.id) appendMessageToChat(c, imgMsg);
+        setTimeout(() => { if(!DB.chats.find(x => x.id === currentChatId)) return; const stickerMsg = { id:uid(), uid:STICKERS_BOT_ID, type:'sticker', image:compressed, stickerName:me.stickerName || 'Стикер', text:`Пак создан!`, ts:Date.now() }; c.messages.push(stickerMsg); me.stickerName = ''; save(); if(currentChatId === c.id) appendMessageToChat(c, stickerMsg); }, 1000);
+      } else {
+        const m = { id:uid(), uid:sendAsChannel ? c.id : me.id, type:'image', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:compressed, ts:Date.now(), isChannelMsg:sendAsChannel };
+        c.messages.push(m);
+        if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); else if (c.type === 'channel' && sendAsChannel) publishChannelMessage(c, m);
+        if (currentChatId === c.id) appendMessageToChat(c, m);
+      }
+      touch(); save();
     });
   } else {
     const reader = new FileReader();
-    reader.onload = () => { const c = DB.chats.find(x => x.id === currentChatId); if(!c) return; const m = { id:uid(), uid:sendAsChannel ? c.id : me.id, type:'file', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:reader.result, ts:Date.now(), isChannelMsg:sendAsChannel }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); else if (c.type === 'channel' && sendAsChannel) publishChannelMessage(c, m); touch(); save(); if(currentChatId === c.id) renderMessages(true); };
+    reader.onload = () => { const c = DB.chats.find(x => x.id === currentChatId); if(!c) return; const m = { id:uid(), uid:sendAsChannel ? c.id : me.id, type:'file', fileName:file.name, fileSize:(file.size/1024).toFixed(1) + ' KB', image:reader.result, ts:Date.now(), isChannelMsg:sendAsChannel }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); else if (c.type === 'channel' && sendAsChannel) publishChannelMessage(c, m); touch(); save(); if(currentChatId === c.id) appendMessageToChat(c, m); };
     reader.readAsDataURL(file);
   }
   input.value = '';
@@ -2738,7 +3135,7 @@ function toggleEmojiPanel(){ const p = document.getElementById('emoji-panel'); p
 function switchEmojiTab(tab, ev){ currentEmojiTab = tab; document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active')); if(ev && ev.target) ev.target.classList.add('active'); renderEmojiContent(tab); }
 function renderEmojiContent(tab){ const content = document.getElementById('emoji-content'); if(tab === 'emoji'){ content.innerHTML = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'].map(e => `<div class="emoji-item" onclick="insertEmoji('${e}')">${e}</div>`).join(''); } else { const st = me.savedStickers || []; if(!st.length){ content.innerHTML = '<div style="grid-column:span 6;text-align:center;color:var(--text-secondary);padding:20px;">Нет стикеров</div>'; return; } content.innerHTML = st.map(s => `<img src="${s.img}" decoding="async" class="sticker-item" onclick="sendSticker('${s.img}')">`).join(''); } }
 function insertEmoji(emoji){ const i = document.getElementById('msg-input'); i.value += emoji; i.focus(); }
-function sendSticker(img){ if(!currentChatId) return; const c = DB.chats.find(x => x.id === currentChatId); if(!c) return; const m = { id:uid(), uid:me.id, type:'sticker', image:img, stickerName:'Стикер', ts:Date.now() }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); save(); renderMessages(true); document.getElementById('emoji-panel').classList.remove('show'); }
+function sendSticker(img){ if(!currentChatId) return; const c = DB.chats.find(x => x.id === currentChatId); if(!c) return; const m = { id:uid(), uid:me.id, type:'sticker', image:img, stickerName:'Стикер', ts:Date.now() }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); save(); appendMessageToChat(c, m); document.getElementById('emoji-panel').classList.remove('show'); }
 
 function startPress(id){ isLongPress = false; pressTimer = setTimeout(() => { isLongPress = true; const c = DB.chats.find(x => x.id === id); if(!c) return; if(c.members.includes(BOT_ID) || c.members.includes(STICKERS_BOT_ID)) return toast('Ботов нельзя'); openDeleteModal(id); }, 600); }
 function cancelPress(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } }
@@ -2796,7 +3193,7 @@ function saveProfile(){
   if(DB.users.some(u => String(u.username || '').toLowerCase() === username && u.id !== me.id)) return toast('Занято');
   me.name = name; me.username = username; me.about = about; me.birthday = bday; me.avatar = editAvatar; me.banner = editBanner;
   if(isSk1te(me)){ me.badgesStart = tempBadgesStart; me.badgesEnd = tempBadgesEnd; }
-  if(canEditPhone()) me.phone = phone; touch(); save(); closeModal('modal-edit'); renderAll(); toast('Сохранено');
+  if(canEditPhone()) me.phone = phone; touch(); save(); broadcastProfile(); closeModal('modal-edit'); renderAll(); toast('Сохранено');
 }
 
 function openEditBot(id){ const u = DB.users.find(x => x.id === id); if(!u) return; editingBotId = id; editBotAvatar = u.avatar; $('#bot-edit-name').value = u.name; $('#bot-edit-about').value = u.about || ''; updatePickerCircle($('#bot-edit-ap-circle'), u.avatar, u.name); openModal('modal-edit-bot'); }

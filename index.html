@@ -1166,14 +1166,14 @@ function svgIcon(name, size) {
 }
 
 /* =========================================================
-   ANIMATION HELPERS — статика (магазин) vs анимация (профиль)
+   ANIMATION HELPERS — статика (магазин/ячейки) vs анимация (просмотр/аватарка)
    ========================================================= */
 
 /* Надёжная проверка: реально ли это анимированный GIF/WebP */
 function isAnimatedDataUrl(url) {
   if (!url || typeof url !== 'string') return false;
 
-  // GIF — считаем потенциально анимированным (большинство гифок с подарками анимированы)
+  // GIF — считаем потенциально анимированным
   if (url.startsWith('data:image/gif')) return true;
 
   // WebP — парсим заголовок VP8X
@@ -1184,16 +1184,12 @@ function isAnimatedDataUrl(url) {
       const b64 = url.substring(idx + 1, idx + 200);
       const bin = atob(b64.replace(/\s/g, ''));
       if (bin.length < 30) return false;
-      // RIFF
       if (bin.charCodeAt(0) !== 0x52 || bin.charCodeAt(1) !== 0x49 ||
           bin.charCodeAt(2) !== 0x46 || bin.charCodeAt(3) !== 0x46) return false;
-      // WEBP
       if (bin.charCodeAt(8) !== 0x57 || bin.charCodeAt(9) !== 0x45 ||
           bin.charCodeAt(10) !== 0x42 || bin.charCodeAt(11) !== 0x50) return false;
-      // Chunk type
       const chunk = bin.substr(12, 4);
-      if (chunk !== 'VP8X') return false; // VP8 / VP8L — статика
-      // ANIMATION flag = 0x02 (bit 1) at byte 20
+      if (chunk !== 'VP8X') return false;
       const flags = bin.charCodeAt(20);
       return (flags & 0x02) !== 0;
     } catch(e) { return false; }
@@ -1223,12 +1219,11 @@ function convertAnimatedToStatic(dataUrl) {
   });
 }
 
-/* Миграция — только для реально анимированных, чтобы не портить статику */
+/* Миграция — только для реально анимированных */
 async function migrateAnimatedImages() {
   if (DB._animgMigrated) return;
   DB._animgMigrated = true;
 
-  // Каталог
   const catalogItems = [];
   DB.customGifts.forEach(g => {
     if (g.isPack && Array.isArray(g.gifts)) g.gifts.forEach(x => catalogItems.push(x));
@@ -1244,7 +1239,6 @@ async function migrateAnimatedImages() {
     }
   }
 
-  // Инвентарь
   const userGifts = [];
   DB.users.forEach(u => {
     if (Array.isArray(u.gifts)) u.gifts.forEach(ug => {
@@ -1688,6 +1682,7 @@ function openNFTMarket() {
   openModal('modal-nft-market');
 }
 
+/* NFT-маркет — замороженные (статика) в списке */
 function renderNFTMarket() {
   const box = document.getElementById('nft-market-list');
   if (!box) return;
@@ -1717,6 +1712,7 @@ function renderNFTMarket() {
         actionHTML = `<button class="btn btn-primary" style="padding:8px 12px;font-size:12px;" onclick="buyNFTAtAsking('${l.id}')">Купить ${l.askingPrice} ★</button>`;
       }
     }
+    // NFT-маркет: замороженное превью (статика)
     return `<div class="nft-lot-card">
       <img src="${l.giftImage}" decoding="async" alt="">
       <div class="nft-lot-info">
@@ -1732,6 +1728,7 @@ function renderNFTMarket() {
   }).join('');
 }
 
+/* Модалки — анимированные (просмотр конкретного NFT) */
 function openNFTSellModal(userId, giftId) {
   const u = DB.users.find(x => x.id === userId);
   if (!u || u.id !== me.id) return toast('Только свой NFT');
@@ -1739,7 +1736,6 @@ function openNFTSellModal(userId, giftId) {
   if (!g || !g.isNFT) return toast('Не NFT');
   const box = document.getElementById('nft-sell-content');
   const existing = DB.nftListings.find(l => l.giftId === giftId && l.sellerId === me.id);
-  // Для NFT-модалок показываем анимированную версию (это владелец смотрит свой NFT)
   const previewSrc = g.giftAnimated || g.giftImage;
   if (existing) {
     box.innerHTML = `
@@ -1827,6 +1823,7 @@ function openNFTBidModal(listingId) {
   if (!l) return;
   const minBid = Math.max(l.askingPrice, (l.highestBid || 0) + 1);
   const box = document.getElementById('nft-bid-content');
+  // Просмотр = анимация
   box.innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
       <img src="${l.giftAnimated || l.giftImage}" style="width:120px;height:120px;object-fit:contain;">
@@ -1993,8 +1990,10 @@ function migrateDB(){
   });
   if (changed) save();
 
-  if (!DB.customGifts.some(g => g.id === 'mihka')) {
-    DB.customGifts.unshift({ id:'mihka', name:'Плюшевый Мишка', image:'mihka.webp', price:15, stock:100 });
+  /* FIX: mihka.webp убран. Удаляем из каталога, если он был добавлен раньше. */
+  if (DB.customGifts.some(g => g.id === 'mihka')) {
+    DB.customGifts = DB.customGifts.filter(g => g.id !== 'mihka');
+    save();
   }
 
   DB.users.forEach(u => {
@@ -2305,7 +2304,7 @@ function avatarWithStatus(value, name, size, square, online){
   return `<div class="av-wrap">${av}<span class="online-dot"></span></div>`;
 }
 
-/* ПРОФИЛЬ / ВОКРУГ АВАТАРКИ: анимированная версия (giftAnimated || giftImage) */
+/* ВОКРУГ АВАТАРКИ: анимированная версия (giftAnimated || giftImage) */
 function renderAvatarWithGifts(u, size){
   size = size || 200;
   const coreSize = 90;
@@ -2320,8 +2319,7 @@ function renderAvatarWithGifts(u, size){
     const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
     const x = cx + R * Math.cos(angle) - 16;
     const y = cy + R * Math.sin(angle) - 16;
-    // Анимированная версия вокруг аватарки
-    const src = g.giftAnimated || g.giftImage;
+    const src = g.giftAnimated || g.giftImage; // анимация вокруг аватарки
     html += `<img src="${src}" class="gift-frame-item" style="left:${x}px;top:${y}px;" onclick="event.stopPropagation();viewGiftDetails('${u.id}','${g.id}')" title="${escapeHtml(g.giftName)}">`;
   });
   html += `</div>`;
@@ -2500,7 +2498,6 @@ function chatOtherUser(c){
 
 function lastMsg(c){ return c.messages.length ? c.messages[c.messages.length-1] : null; }
 
-/* Без эмодзи в превью */
 function previewText(c){
   const m = lastMsg(c);
   if(!m) return c.type === 'channel' ? 'Нет публикаций' : 'Нет сообщений';
@@ -2655,7 +2652,9 @@ function messageUser(userId){
   openChat(c.id);
 }
 
-/* ПРОФИЛЬ: анимация для превью подарков и вокруг аватарки */
+/* FIX: ПРОФИЛЬ — В ЯЧЕЙКАХ подарков = СТАТИКА (g.giftImage)
+   Вокруг аватарки = анимация (renderAvatarWithGifts уже так работает)
+   В просмотре (viewGiftDetails) = анимация */
 function renderProfile(){
   const box = $('#page-profile');
   const chanCount = DB.chats.filter(c => c.type === 'channel' && c.members.includes(me.id)).length;
@@ -2681,12 +2680,12 @@ function renderProfile(){
     }).join('')}</div>`;
   }
   
-  // Профиль: используем АНИМИРОВАННУЮ версию (giftAnimated || giftImage)
+  // ЯЧЕЙКИ подарков — статика (без анимации)
   const gifts = me.gifts || [];
   let giftsGridHTML = '';
   if(gifts.length > 0){
     giftsGridHTML = gifts.map(g => {
-      const src = g.giftAnimated || g.giftImage;
+      const src = g.giftImage; // статика в ячейке
       const pinned = (me.profileGifts||[]).includes(g.id);
       return `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${me.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}${pinned ? `<span style="position:absolute;top:4px;left:4px;color:var(--accent-primary);">${svgIcon('pin', 12)}</span>` : ''}<img src="${src}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`;
     }).join('');
@@ -2730,6 +2729,9 @@ function renderProfile(){
     </button>`;
 }
 
+/* FIX: ЧУЖОЙ ПРОФИЛЬ — В ЯЧЕЙКАХ подарков = СТАТИКА
+   Вокруг аватарки = анимация (renderAvatarWithGifts)
+   В просмотре (viewGiftDetails) = анимация */
 function viewUserProfile(userId){
   ensureLocalUser(userId);
   const u = DB.users.find(x => x.id === userId); if(!u) return;
@@ -2747,13 +2749,13 @@ function viewUserProfile(userId){
   const about = (u.about || '').trim();
   const aboutHTML = `<div class="section-title">О себе</div><div class="group"><div class="cell" style="padding:16px;"><div style="font-size:14px;line-height:1.5;color:${about && csA ? 'var(--text-primary)' : 'var(--text-secondary)'};">${about && csA ? escapeHtml(about) : 'Не указано'}</div></div></div>`;
   
-  // В чужом профиле тоже анимация
+  // ЯЧЕЙКИ — статика
   const csG = canSee(u, 'gifts');
   const gifts = csG ? (u.gifts || []) : [];
   let gg = '';
   if(gifts.length > 0){
     gg = gifts.map(g => {
-      const src = g.giftAnimated || g.giftImage;
+      const src = g.giftImage; // статика в ячейке
       return `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${u.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${src}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`;
     }).join('');
     const rem = gifts.length % 3;
@@ -2837,6 +2839,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+/* ПРОСМОТР ПОДАРКА/NFT — АНИМАЦИЯ */
 function viewGiftDetails(userId, giftId){
   const u = DB.users.find(x => x.id === userId); if(!u) return;
   const g = (u.gifts || []).find(x => x.id === giftId); if(!g) return;
@@ -2849,7 +2852,7 @@ function viewGiftDetails(userId, giftId){
   if(!box) return;
 
   const listing = DB.nftListings.find(l => l.giftId === giftId && l.sellerId === userId);
-  // Здесь анимированная версия — пользователь смотрит свой/чужой конкретный подарок
+  // Просмотр = АНИМАЦИЯ
   const imgSrc = g.giftAnimated || g.giftImage;
 
   let nftBlock = '';
@@ -2990,6 +2993,7 @@ function openTransferGift(userId, giftId) {
     if (g.id !== me.id && !ids.has(g.id)) { ids.add(g.id); recipients.push({ id: g.id, name: g.name || 'User', username: g.username || '', avatar: g.avatar || null, _remote: true }); }
   });
   
+  // Просмотр = анимация
   content.innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
       <img src="${g.giftAnimated || g.giftImage}" style="width:80px;height:80px;object-fit:contain;">
@@ -3100,7 +3104,7 @@ function renderGiftRecipients(query){
 
 function filterGiftRecipients(value){ renderGiftRecipients(value); }
 
-/* МАГАЗИН — СТАТИКА (g.image), без анимаций */
+/* МАГАЗИН — СТАТИКА */
 function buildGiftCatalogHTML(){
   const normalGifts = DB.customGifts.filter(g => !g.isPack && (typeof g.stock !== 'number' || g.stock > 0));
   const packs = DB.customGifts.filter(g => g.isPack && (!g.gifts || g.gifts.some(x => typeof x.stock !== 'number' || x.stock > 0)));
@@ -3109,7 +3113,7 @@ function buildGiftCatalogHTML(){
   }
   let html = '';
   normalGifts.forEach(g => {
-      const src = g.image; // статика
+      const src = g.image;
       html += `
       <div class="gift-shop-item" data-gift-id="${g.id}" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
         ${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}
@@ -3120,7 +3124,7 @@ function buildGiftCatalogHTML(){
       </div>`;
   });
   packs.forEach(g => {
-      const src = g.image; // статика
+      const src = g.image;
       html += `
       <div class="gift-shop-item" data-pack-id="${g.id}" style="border: 1px solid var(--accent-primary);">
         <img src="${src}" loading="lazy" decoding="async" style="width:64px;height:64px;object-fit:contain;">
@@ -3147,7 +3151,6 @@ function openGiftCatalog(userId){
   requestAnimationFrame(() => { requestAnimationFrame(() => { openModal('modal-gift-catalog'); }); });
 }
 
-/* Пак — СТАТИКА */
 function openGiftPack(packId) {
   const pack = DB.customGifts.find(g => g.id === packId);
   if (!pack) return;
@@ -3164,7 +3167,6 @@ function openGiftPack(packId) {
   openModal('modal-gift-pack');
 }
 
-/* Превью отправки — СТАТИКА (это покупка) */
 function openGiftSend(packId, giftId){
   currentPackId = packId;
   giftSelectedId = giftId;
@@ -3180,7 +3182,7 @@ function openGiftSend(packId, giftId){
   if (!gift) return;
   const recipient = DB.users.find(u => u.id === giftRecipientId);
   const content = $('#gift-send-content'); if(!content) return;
-  // СТАТИКА в превью покупки
+  // Покупка = статика
   const previewSrc = gift.image;
   content.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:12px;">
@@ -3476,7 +3478,7 @@ function renderSingleMessage(c, m) {
     return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;display:flex;align-items:center;gap:6px;justify-content:center;">${svgIcon('phone', 13)} Заявка</div>`;
   }
   if(m.type === 'gift'){
-    // В чате — анимированная версия
+    // В чате — анимированная версия (просмотр доставленного подарка)
     const src = m.giftAnimated || m.giftImage;
     return `<div class="msg gift-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><div class="gift-bubble"><img src="${src}" decoding="async" class="gift-bubble-img"><div class="gift-bubble-title">${escapeHtml(m.giftName)}</div>${m.text ? `<div class="gift-bubble-text">"${escapeHtml(m.text)}"</div>` : ''}<div class="gift-bubble-hint">${m.nft ? 'NFT' : (m.transferred ? 'Передан' : 'Продать за ' + Math.floor((m.price||15)*0.85) + ' звезд')}</div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
   }
@@ -3925,7 +3927,6 @@ function renderAdminBadges() {
     </div>`).join('');
 }
 
-/* Загрузка: правильный детект анимации (без ложных срабатываний на статике) */
 function handleAdminGiftUpload(input){
   const files = Array.from(input.files || []);
   if(!files.length) return;

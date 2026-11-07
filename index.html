@@ -239,6 +239,9 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
 .gift-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
 .gift-actions .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;}
 .adm-badge-cell{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:12px;margin-bottom:8px;}
+.nft-lot-card{background:var(--surface-2);border-radius:16px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;border:1px solid var(--border-1);}
+.nft-lot-card img{width:64px;height:64px;object-fit:contain;flex:none;border-radius:12px;background:var(--bg);}
+.nft-lot-info{flex:1;min-width:0;}
 </style>
 </head>
 <body>
@@ -487,6 +490,33 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
       <div class="sheet-handle"></div>
       <h2 id="modal-account-title">Аккаунт</h2>
       <div id="account-content"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-nft-market" style="z-index:170;">
+    <div class="modal-backdrop" onclick="closeModal('modal-nft-market')"></div>
+    <div class="sheet" style="height:85vh;display:flex;flex-direction:column;">
+      <div class="sheet-handle"></div>
+      <h2>🏪 NFT Маркет</h2>
+      <div style="flex:1;overflow-y:auto;padding-right:4px;" id="nft-market-list"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-nft-sell" style="z-index:180;">
+    <div class="modal-backdrop" onclick="closeModal('modal-nft-sell')"></div>
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>Выставить NFT</h2>
+      <div id="nft-sell-content"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-nft-bid" style="z-index:180;">
+    <div class="modal-backdrop" onclick="closeModal('modal-nft-bid')"></div>
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>Ставка</h2>
+      <div id="nft-bid-content"></div>
     </div>
   </div>
 
@@ -918,7 +948,6 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
           <div class="section-title">Пользователи</div>
           <div id="adm-stars-users"></div>
         </div>
-        <!-- НОВАЯ ВКЛАДКА: ЗНАЧКИ -->
         <div id="adm-badges-content" class="hidden">
           <div style="background:var(--surface-2);border-radius:16px;padding:16px;margin-bottom:16px;">
             <div class="field" style="margin-bottom:12px;">
@@ -976,7 +1005,7 @@ input,textarea,button{font-family:inherit;font-size:16px;color:inherit;outline:n
         <label>Цена покупки (отображается владельцу)</label>
         <div class="input-wrap"><input id="admin-gift-create-nft-price" type="number" value="15"></div>
         <div style="font-size:11px;color:var(--text-secondary);padding:8px 4px 0;line-height:1.5;">
-          NFT уникален: количество = 1, продать нельзя.
+          NFT уникален: количество = 1.
         </div>
       </div>
       <div class="field" id="admin-gift-create-pack-block"><label>Добавить в пак (необязательно)</label><div class="input-wrap"><input id="admin-gift-create-pack" type="text" placeholder="Название пака"></div></div>
@@ -1027,13 +1056,14 @@ const CH_USERS = 'lipogram_users';
 const CH_PRESENCE = 'lipogram_presence';
 const CH_NOTIFY_PREFIX = 'notify_';
 const CH_CHANNEL_PREFIX = 'channel_';
+const CH_NFT_MARKET = 'lipogram_nft_market';
 
 let pubnub = null;
 let pubnubReady = false;
 let profileBroadcastInterval = null;
 let globalUsersCache = {};
 
-let DB = { users: [], chats: [], session: null, customGifts: [] };
+let DB = { users: [], chats: [], session: null, customGifts: [], nftListings: [] };
 let me = null;
 let currentChatId = null;
 let viewedUserId = null;
@@ -1055,7 +1085,6 @@ let adminGiftCreateType = 'regular';
 let currentFriendSearch = '';
 let bulkUploadItems = [];
 
-/* ==== ADMIN BADGES ==== */
 let adminBadgePos = 'start';
 let adminBadgeData = 'L.png';
 
@@ -1107,6 +1136,77 @@ const BOT_ID = 'number_code_bot';
 const STICKERS_BOT_ID = 'stickers_bot';
 
 /* =========================================================
+   ANIMATION HELPERS - статика vs анимация
+   ========================================================= */
+function isAnimatedDataUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('data:image/gif')) return true;
+  if (url.startsWith('data:image/webp')) return true;
+  return false;
+}
+
+function convertAnimatedToStatic(dataUrl) {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          let staticUrl = canvas.toDataURL('image/webp', 0.75);
+          if (!staticUrl.startsWith('data:image/webp')) staticUrl = canvas.toDataURL('image/jpeg', 0.75);
+          resolve(staticUrl);
+        } catch(e) { resolve(dataUrl); }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    } catch(e) { resolve(dataUrl); }
+  });
+}
+
+async function migrateAnimatedImages() {
+  if (DB._animgMigrated) return;
+  DB._animgMigrated = true;
+
+  // Каталог
+  const catalogItems = [];
+  DB.customGifts.forEach(g => {
+    if (g.isPack && Array.isArray(g.gifts)) g.gifts.forEach(x => catalogItems.push(x));
+    else if (!g.isPack) catalogItems.push(g);
+  });
+  for (const g of catalogItems) {
+    if (!g.animatedImage && g.image && isAnimatedDataUrl(g.image)) {
+      try {
+        const s = await convertAnimatedToStatic(g.image);
+        if (s && s !== g.image) { g.animatedImage = g.image; g.image = s; save(); }
+      } catch(e){}
+      await new Promise(r => setTimeout(r, 15));
+    }
+  }
+
+  // Инвентарь пользователей
+  const userGifts = [];
+  DB.users.forEach(u => {
+    if (Array.isArray(u.gifts)) u.gifts.forEach(ug => {
+      if (!ug.giftAnimated && ug.giftImage && isAnimatedDataUrl(ug.giftImage)) userGifts.push(ug);
+    });
+  });
+  for (const ug of userGifts) {
+    try {
+      const s = await convertAnimatedToStatic(ug.giftImage);
+      if (s && s !== ug.giftImage) { ug.giftAnimated = ug.giftImage; ug.giftImage = s; save(); }
+    } catch(e){}
+    await new Promise(r => setTimeout(r, 15));
+  }
+
+  save();
+  markGiftCatalogDirty();
+  try { if (currentPage === 'profile') renderProfile(); } catch(e){}
+}
+
+/* =========================================================
    PUBNUB
    ========================================================= */
 function destroyPubNub() {
@@ -1143,7 +1243,7 @@ function initPubNub() {
     });
 
     pubnub.subscribe({
-      channels: [CH_USERS, CH_PRESENCE, CH_NOTIFY_PREFIX + me.id],
+      channels: [CH_USERS, CH_PRESENCE, CH_NFT_MARKET, CH_NOTIFY_PREFIX + me.id],
       withPresence: true
     });
 
@@ -1159,6 +1259,14 @@ function initPubNub() {
       }
     });
 
+    pubnub.fetchMessages({ channels: [CH_NFT_MARKET], count: 200 }, (status, response) => {
+      if (response && response.channels && response.channels[CH_NFT_MARKET]) {
+        response.channels[CH_NFT_MARKET].forEach(m => {
+          if (m.message) handleNFTMarketMessage(m.message);
+        });
+      }
+    });
+
     broadcastProfile();
     profileBroadcastInterval = setInterval(broadcastProfile, 45000);
     pubnubReady = true;
@@ -1167,7 +1275,6 @@ function initPubNub() {
   }
 }
 
-/* FIX: broadcast профиля с badgesStart/badgesEnd */
 function broadcastProfile() {
   if (!pubnub || !me) return;
   pubnub.publish({
@@ -1187,7 +1294,6 @@ function broadcastProfile() {
   }, (s) => { if (s.error) console.warn('[PubNub] publish profile', s); });
 }
 
-/* FIX: broadcast чужого профиля (для админ-панели) */
 function broadcastUserProfile(user, force) {
   if (!pubnub || !user) return;
   pubnub.publish({
@@ -1208,13 +1314,11 @@ function broadcastUserProfile(user, force) {
   }, (s) => { if (s.error) console.warn('[PubNub] publish user profile', s); });
 }
 
-/* FIX: обрабатываем badges + @always всегда с L.png */
 function handleProfileBroadcast(data) {
   if (!data || !data.id) return;
   const isMe = !!(me && data.id === me.id);
   if (isMe && !data.force) return;
 
-  // @always всегда с L.png
   if (String(data.username || '').toLowerCase() === 'always') {
     if (!Array.isArray(data.badgesStart)) data.badgesStart = [];
     if (!data.badgesStart.includes('L.png')) data.badgesStart.unshift('L.png');
@@ -1286,6 +1390,10 @@ function handlePubNubMessage(event) {
     if (msg.type === 'profile') handleProfileBroadcast(msg);
     return;
   }
+  if (channel === CH_NFT_MARKET) {
+    handleNFTMarketMessage(msg);
+    return;
+  }
   if (channel === CH_PRESENCE) {
     if (msg.type === 'presence') {
       const uid = msg.userId;
@@ -1317,6 +1425,8 @@ function handlePubNubMessage(event) {
   }
   if (channel === CH_NOTIFY_PREFIX + (me ? me.id : '')) {
     if (msg.type === 'personal_msg') handleIncomingPersonalMsg(msg);
+    if (msg.type === 'nft_won') handleNFTWon(msg);
+    if (msg.type === 'nft_sold') handleNFTSold(msg);
     return;
   }
   if (channel.startsWith(CH_CHANNEL_PREFIX)) {
@@ -1411,7 +1521,6 @@ function publishChannelMessage(chat, message) {
   }, (s) => { if (s.error) console.warn('[PubNub] publish channel', s); });
 }
 
-/* FIX: копируем badges из кэша */
 function ensureLocalUser(userId, fallback) {
   if (!userId) return null;
   let u = DB.users.find(x => x.id === userId);
@@ -1442,6 +1551,327 @@ function ensureLocalUser(userId, fallback) {
   }
   DB.users.push(u);
   return u;
+}
+
+/* =========================================================
+   NFT MARKET
+   ========================================================= */
+function broadcastNFTListing(listing) {
+  if (!pubnub) return;
+  pubnub.publish({ channel: CH_NFT_MARKET, message: { type: 'nft_listing', listing, ts: Date.now() }, storeInHistory: true });
+}
+function broadcastNFTListingUpdate(listing) {
+  if (!pubnub) return;
+  pubnub.publish({ channel: CH_NFT_MARKET, message: { type: 'nft_listing_updated', listing, ts: Date.now() }, storeInHistory: true });
+}
+function broadcastNFTBid(listingId, bidderId, bidderUsername, amount) {
+  if (!pubnub) return;
+  pubnub.publish({ channel: CH_NFT_MARKET, message: { type: 'nft_bid', listingId, bidderId, bidderUsername, amount, ts: Date.now() }, storeInHistory: true });
+}
+function broadcastNFTListingRemoved(listingId, reason) {
+  if (!pubnub) return;
+  pubnub.publish({ channel: CH_NFT_MARKET, message: { type: 'nft_listing_removed', listingId, reason, ts: Date.now() }, storeInHistory: true });
+}
+
+function handleNFTMarketMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'nft_listing') handleNFTListingAdd(msg.listing);
+  else if (msg.type === 'nft_listing_updated') handleNFTListingAdd(msg.listing);
+  else if (msg.type === 'nft_bid') handleNFTBidAdd(msg);
+  else if (msg.type === 'nft_listing_removed') handleNFTListingRemove(msg.listingId);
+}
+
+function handleNFTListingAdd(listing) {
+  if (!listing || !listing.id) return;
+  const idx = DB.nftListings.findIndex(l => l.id === listing.id);
+  if (idx > -1) DB.nftListings[idx] = listing;
+  else DB.nftListings.push(listing);
+  save();
+  if (document.getElementById('modal-nft-market').classList.contains('show')) renderNFTMarket();
+}
+
+function handleNFTBidAdd(data) {
+  const l = DB.nftListings.find(x => x.id === data.listingId);
+  if (!l) return;
+  l.highestBid = data.amount;
+  l.highestBidderId = data.bidderId;
+  l.highestBidderUsername = data.bidderUsername;
+  save();
+  if (document.getElementById('modal-nft-market').classList.contains('show')) renderNFTMarket();
+}
+
+function handleNFTListingRemove(listingId) {
+  DB.nftListings = DB.nftListings.filter(l => l.id !== listingId);
+  save();
+  if (document.getElementById('modal-nft-market').classList.contains('show')) renderNFTMarket();
+}
+
+function handleNFTWon(msg) {
+  if (!me) return;
+  if (!msg.gift) return;
+  if (!me.gifts) me.gifts = [];
+  if (me.gifts.some(g => g.id === msg.gift.id)) return;
+  me.gifts.push(msg.gift);
+  save();
+  if (currentPage === 'profile') renderProfile();
+  toast('Вы купили NFT: ' + msg.gift.giftName);
+}
+
+function handleNFTSold(msg) {
+  if (!me || !me.gifts) return;
+  const idx = me.gifts.findIndex(g => g.id === msg.gift.id);
+  if (idx === -1) return;
+  me.gifts.splice(idx, 1);
+  if (me.profileGifts) me.profileGifts = me.profileGifts.filter(id => id !== msg.gift.id);
+  me.stars = (me.stars || 0) + (msg.price || 0);
+  save();
+  if (currentPage === 'profile') renderProfile();
+  toast('NFT продан за ' + msg.price + ' ★');
+}
+
+function openNFTMarket() {
+  renderNFTMarket();
+  openModal('modal-nft-market');
+}
+
+function renderNFTMarket() {
+  const box = document.getElementById('nft-market-list');
+  if (!box) return;
+  if (!DB.nftListings.length) {
+    box.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);"><div style="font-size:48px;margin-bottom:16px;">🏪</div><h3 style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px;">Маркет пуст</h3><p>Никто не выставил NFT на продажу.</p></div>`;
+    return;
+  }
+  const sorted = [...DB.nftListings].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  box.innerHTML = sorted.map(l => {
+    const isSeller = l.sellerId === (me ? me.id : null);
+    const isHighest = l.highestBidderId === (me ? me.id : null);
+    const currentPrice = Math.max(l.askingPrice || 0, l.highestBid || 0);
+    let actionHTML = '';
+    if (isSeller) {
+      if (l.highestBid > 0) {
+        actionHTML = `<button class="btn btn-primary" style="padding:8px 12px;font-size:12px;" onclick="acceptHighestNFTBid('${l.id}')">Принять ${l.highestBid} ★</button>`;
+      } else {
+        actionHTML = `<button class="btn btn-ghost" style="padding:8px 12px;font-size:12px;" onclick="cancelNFTListing('${l.id}')">Снять</button>`;
+      }
+    } else {
+      if (isHighest) {
+        actionHTML = `<div style="font-size:11px;color:var(--success);font-weight:600;text-align:center;">✓ Вы лидируете</div>`;
+      } else if (l.highestBid > 0) {
+        const minBid = l.highestBid + 1;
+        actionHTML = `<button class="btn btn-primary" style="padding:8px 12px;font-size:12px;" onclick="openNFTBidModal('${l.id}')">Перебить от ${minBid} ★</button>`;
+      } else {
+        actionHTML = `<button class="btn btn-primary" style="padding:8px 12px;font-size:12px;" onclick="buyNFTAtAsking('${l.id}')">Купить ${l.askingPrice} ★</button>`;
+      }
+    }
+    return `<div class="nft-lot-card">
+      <img src="${l.giftImage}" decoding="async" alt="">
+      <div class="nft-lot-info">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${escapeHtml(l.giftName || 'NFT')}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Продавец: @${escapeHtml(l.sellerUsername || '—')}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;">
+          <img src="star.png" style="width:14px;height:14px;"> ${currentPrice} ★
+          ${l.highestBid > 0 ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">ставка @${escapeHtml(l.highestBidderUsername||'')}</span>` : `<span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">старт</span>`}
+        </div>
+        <div style="margin-top:8px;">${actionHTML}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openNFTSellModal(userId, giftId) {
+  const u = DB.users.find(x => x.id === userId);
+  if (!u || u.id !== me.id) return toast('Только свой NFT');
+  const g = (u.gifts || []).find(x => x.id === giftId);
+  if (!g || !g.isNFT) return toast('Не NFT');
+  const box = document.getElementById('nft-sell-content');
+  const existing = DB.nftListings.find(l => l.giftId === giftId && l.sellerId === me.id);
+  if (existing) {
+    box.innerHTML = `
+      <div style="text-align:center;margin-bottom:16px;">
+        <img src="${g.giftAnimated || g.giftImage}" style="width:120px;height:120px;object-fit:contain;">
+        <div style="font-size:16px;font-weight:700;margin-top:8px;">${escapeHtml(g.giftName)}</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:6px;">Уже выставлен за ${existing.askingPrice} ★${existing.highestBid>0 ? `, ставка ${existing.highestBid} ★` : ''}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="cancelNFTListing('${existing.id}'); closeModal('modal-nft-sell');">Снять с продажи</button>
+    `;
+  } else {
+    box.innerHTML = `
+      <div style="text-align:center;margin-bottom:16px;">
+        <img src="${g.giftAnimated || g.giftImage}" style="width:120px;height:120px;object-fit:contain;">
+        <div style="font-size:16px;font-weight:700;margin-top:8px;">${escapeHtml(g.giftName)}</div>
+      </div>
+      <div class="field"><label>Цена (★ минимум)</label><div class="input-wrap"><input id="nft-sell-price" type="number" placeholder="100" min="1" value="100"></div></div>
+      <div style="font-size:11px;color:var(--text-secondary);padding:0 4px 12px;line-height:1.5;">Другие пользователи смогут купить или перебить ставку. Вы принимаете лучшую ставку вручную.</div>
+      <button class="btn btn-primary" onclick="confirmNFTSell('${userId}', '${giftId}')">Выставить</button>
+    `;
+  }
+  openModal('modal-nft-sell');
+}
+
+function confirmNFTSell(userId, giftId) {
+  const priceEl = document.getElementById('nft-sell-price');
+  const price = parseInt(priceEl ? priceEl.value : 0);
+  if (!price || price < 1) return toast('Некорректная цена');
+  const u = DB.users.find(x => x.id === userId);
+  if (!u || u.id !== me.id) return;
+  const g = (u.gifts || []).find(x => x.id === giftId);
+  if (!g || !g.isNFT) return;
+  if (DB.nftListings.some(l => l.giftId === giftId && l.sellerId === me.id)) return toast('Уже выставлен');
+  const listing = {
+    id: uid(),
+    giftId: g.id,
+    sellerId: me.id,
+    sellerUsername: me.username,
+    sellerName: me.name,
+    giftName: g.giftName,
+    giftImage: g.giftImage,
+    giftAnimated: g.giftAnimated || null,
+    giftPrice: g.price,
+    nftCreatorId: g.nftCreatorId,
+    nftMintedAt: g.nftMintedAt,
+    nftAcquiredAt: g.nftAcquiredAt,
+    askingPrice: price,
+    highestBid: 0,
+    highestBidderId: null,
+    highestBidderUsername: null,
+    createdAt: Date.now()
+  };
+  DB.nftListings.push(listing);
+  g.nftListed = true;
+  g.nftAskingPrice = price;
+  save();
+  broadcastNFTListing(listing);
+  closeModal('modal-nft-sell');
+  closeModal('modal-account');
+  renderProfile();
+  toast('NFT выставлен за ' + price + ' ★');
+}
+
+function cancelNFTListing(listingId) {
+  const l = DB.nftListings.find(x => x.id === listingId);
+  if (!l) return;
+  if (l.sellerId !== me.id) return toast('Не ваш лот');
+  if (l.highestBid > 0) return toast('Нельзя снять — есть ставки');
+  const u = DB.users.find(x => x.id === me.id);
+  if (u) {
+    const g = (u.gifts || []).find(x => x.id === l.giftId);
+    if (g) { g.nftListed = false; g.nftAskingPrice = 0; }
+  }
+  DB.nftListings = DB.nftListings.filter(x => x.id !== listingId);
+  save();
+  broadcastNFTListingRemoved(listingId, 'cancelled');
+  if (document.getElementById('modal-nft-market').classList.contains('show')) renderNFTMarket();
+  closeModal('modal-nft-sell');
+  renderProfile();
+  toast('Лот снят');
+}
+
+function openNFTBidModal(listingId) {
+  const l = DB.nftListings.find(x => x.id === listingId);
+  if (!l) return;
+  const minBid = Math.max(l.askingPrice, (l.highestBid || 0) + 1);
+  const box = document.getElementById('nft-bid-content');
+  box.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <img src="${l.giftAnimated || l.giftImage}" style="width:120px;height:120px;object-fit:contain;">
+      <div style="font-size:16px;font-weight:700;margin-top:8px;">${escapeHtml(l.giftName)}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Текущая цена: ${Math.max(l.askingPrice, l.highestBid||0)} ★</div>
+    </div>
+    <div class="field"><label>Ваша ставка (мин ${minBid} ★)</label><div class="input-wrap"><input id="nft-bid-amount" type="number" placeholder="${minBid}" min="${minBid}" value="${minBid}"></div></div>
+    <div style="font-size:11px;color:var(--text-secondary);padding:0 4px 12px;line-height:1.5;">Если продавец примет вашу ставку — вы получите NFT, а звёзды спишутся. Пока — ничего не списывается.</div>
+    <button class="btn btn-primary" onclick="confirmNFTBid('${listingId}')">Сделать ставку</button>
+  `;
+  openModal('modal-nft-bid');
+}
+
+function confirmNFTBid(listingId) {
+  const amountEl = document.getElementById('nft-bid-amount');
+  const amount = parseInt(amountEl ? amountEl.value : 0);
+  if (!amount || amount < 1) return toast('Неверная сумма');
+  const l = DB.nftListings.find(x => x.id === listingId);
+  if (!l) return toast('Лот не найден');
+  if (l.sellerId === me.id) return toast('Нельзя на свой лот');
+  const minBid = Math.max(l.askingPrice, (l.highestBid || 0) + 1);
+  if (amount < minBid) return toast('Минимум: ' + minBid + ' ★');
+  if ((me.stars || 0) < amount) return toast('Недостаточно звёзд');
+  l.highestBid = amount;
+  l.highestBidderId = me.id;
+  l.highestBidderUsername = me.username;
+  save();
+  broadcastNFTBid(listingId, me.id, me.username, amount);
+  closeModal('modal-nft-bid');
+  renderNFTMarket();
+  toast('Ставка ' + amount + ' ★ принята');
+}
+
+function buyNFTAtAsking(listingId) {
+  const l = DB.nftListings.find(x => x.id === listingId);
+  if (!l) return toast('Лот не найден');
+  if (l.sellerId === me.id) return toast('Нельзя купить свой лот');
+  if (l.highestBid > 0) return toast('Есть ставки — сделайте ставку');
+  const price = l.askingPrice;
+  if ((me.stars || 0) < price) return toast('Недостаточно звёзд');
+  const seller = DB.users.find(u => u.id === l.sellerId);
+  if (!seller) return toast('Продавец не найден');
+  const idx = seller.gifts ? seller.gifts.findIndex(g => g.id === l.giftId) : -1;
+  if (idx === -1) return toast('NFT не найден у продавца');
+  const gift = seller.gifts.splice(idx, 1)[0];
+  if (seller.profileGifts) seller.profileGifts = seller.profileGifts.filter(id => id !== gift.id);
+  me.stars = (me.stars || 0) - price;
+  seller.stars = (seller.stars || 0) + price;
+  gift.nftCurrentOwnerId = me.id;
+  gift.nftAcquiredAt = Date.now();
+  gift.nftListed = false;
+  gift.nftAskingPrice = 0;
+  if (!me.gifts) me.gifts = [];
+  me.gifts.push(gift);
+  DB.nftListings = DB.nftListings.filter(x => x.id !== listingId);
+  save();
+  broadcastNFTListingRemoved(listingId, 'sold');
+  broadcastUserProfile(seller, true);
+  if (pubnub) {
+    pubnub.publish({ channel: CH_NOTIFY_PREFIX + seller.id, message: { type: 'nft_sold', gift: gift, price: price, buyerUsername: me.username }, storeInHistory: true });
+    pubnub.publish({ channel: CH_NOTIFY_PREFIX + me.id, message: { type: 'nft_won', gift: gift, price: price, sellerUsername: seller.username }, storeInHistory: true });
+  }
+  closeModal('modal-nft-market');
+  renderProfile();
+  toast('Куплено за ' + price + ' ★');
+}
+
+function acceptHighestNFTBid(listingId) {
+  const l = DB.nftListings.find(x => x.id === listingId);
+  if (!l) return toast('Лот не найден');
+  if (l.sellerId !== me.id) return toast('Не ваш лот');
+  if (!l.highestBidderId) return toast('Нет ставок');
+  const buyer = DB.users.find(u => u.id === l.highestBidderId);
+  if (!buyer) return toast('Покупатель не найден');
+  if ((buyer.stars || 0) < l.highestBid) return toast('У покупателя недостаточно звёзд');
+  const seller = DB.users.find(u => u.id === me.id);
+  if (!seller || !seller.gifts) return;
+  const idx = seller.gifts.findIndex(g => g.id === l.giftId);
+  if (idx === -1) return toast('NFT не найден');
+  const gift = seller.gifts.splice(idx, 1)[0];
+  if (seller.profileGifts) seller.profileGifts = seller.profileGifts.filter(id => id !== gift.id);
+  buyer.stars = (buyer.stars || 0) - l.highestBid;
+  seller.stars = (seller.stars || 0) + l.highestBid;
+  gift.nftCurrentOwnerId = buyer.id;
+  gift.nftAcquiredAt = Date.now();
+  gift.nftListed = false;
+  gift.nftAskingPrice = 0;
+  if (!buyer.gifts) buyer.gifts = [];
+  buyer.gifts.push(gift);
+  DB.nftListings = DB.nftListings.filter(x => x.id !== listingId);
+  save();
+  broadcastNFTListingRemoved(listingId, 'sold');
+  broadcastUserProfile(seller, true);
+  broadcastUserProfile(buyer, true);
+  if (pubnub) {
+    pubnub.publish({ channel: CH_NOTIFY_PREFIX + buyer.id, message: { type: 'nft_won', gift: gift, price: l.highestBid, sellerUsername: seller.username }, storeInHistory: true });
+    pubnub.publish({ channel: CH_NOTIFY_PREFIX + seller.id, message: { type: 'nft_sold', gift: gift, price: l.highestBid, buyerUsername: buyer.username }, storeInHistory: true });
+  }
+  closeModal('modal-nft-market');
+  renderProfile();
+  toast('NFT продан за ' + l.highestBid + ' ★ @' + buyer.username);
 }
 
 /* =========================================================
@@ -1489,15 +1919,17 @@ async function load(){
     DB.chats = Array.isArray(data.chats) ? data.chats : [];
     DB.session = data.session || null;
     DB.customGifts = Array.isArray(data.customGifts) ? data.customGifts : [];
+    DB.nftListings = Array.isArray(data.nftListings) ? data.nftListings : [];
+    DB._animgMigrated = !!data._animgMigrated;
   }
   migrateDB();
 }
 
-/* FIX: миграция + @always */
 function migrateDB(){
   if(!Array.isArray(DB.users)) DB.users = [];
   if(!Array.isArray(DB.chats)) DB.chats = [];
   if(!Array.isArray(DB.customGifts)) DB.customGifts = [];
+  if(!Array.isArray(DB.nftListings)) DB.nftListings = [];
 
   let changed = false;
   DB.users.forEach(u => {
@@ -1557,9 +1989,7 @@ function migrateDB(){
     if(!Array.isArray(c.badgesEnd)) c.badgesEnd = [];
   });
 
-  // FIX: @always должен иметь L.png всегда
   ensureAlwaysBadge();
-
   markGiftCatalogDirty();
 }
 
@@ -1772,7 +2202,6 @@ const AVATAR_SVGS = [
   `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ng12" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#b91c1c"/></linearGradient></defs><rect width="100" height="100" fill="url(#ng12)"/><path d="M50 16c14 16 24 26 24 42a24 24 0 0 1-48 0c0-10 6-16 10-24 2 6 5 8 8 10 0-12 2-20 6-28z" fill="#ffe082"/><path d="M50 44c6 8 10 12 10 20a10 10 0 0 1-20 0c0-8 4-12 10-20z" fill="#fff3e0"/></svg>`
 ];
 
-/* FIX: nameHTML + @always всегда с L.png */
 function nameHTML(name, usernameOrChat, size) {
   let bs = '', be = '', mb = '';
   const s = size || 20;
@@ -1821,6 +2250,7 @@ function avatarWithStatus(value, name, size, square, online){
   return `<div class="av-wrap">${av}<span class="online-dot"></span></div>`;
 }
 
+/* FIX: анимированная версия вокруг аватарки */
 function renderAvatarWithGifts(u, size){
   size = size || 200;
   const coreSize = 90;
@@ -1835,7 +2265,8 @@ function renderAvatarWithGifts(u, size){
     const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
     const x = cx + R * Math.cos(angle) - 16;
     const y = cy + R * Math.sin(angle) - 16;
-    html += `<img src="${g.giftImage}" class="gift-frame-item" style="left:${x}px;top:${y}px;" onclick="event.stopPropagation();viewGiftDetails('${u.id}','${g.id}')" title="${escapeHtml(g.giftName)}">`;
+    const src = g.giftAnimated || g.giftImage;
+    html += `<img src="${src}" class="gift-frame-item" style="left:${x}px;top:${y}px;" onclick="event.stopPropagation();viewGiftDetails('${u.id}','${g.id}')" title="${escapeHtml(g.giftName)}">`;
   });
   html += `</div>`;
   return html;
@@ -1849,7 +2280,6 @@ function switchAuthTab(tab){
   $('#form-register').classList.toggle('hidden', tab !== 'register');
 }
 
-/* FIX: @always получает L.png при регистрации */
 function handleRegister(){
   const name = $('#reg-name').value.trim();
   const username = $('#reg-username').value.trim().replace(/^@+/,'').toLowerCase();
@@ -1874,7 +2304,6 @@ function handleRegister(){
     chatSettings:{textSize:16,cornerSize:16,themeId:'t1'},
     botNumberGiven:false, pass, friends:[], lastSeen:Date.now(), createdAt:Date.now()
   };
-  // FIX: @always — L.png в значках
   if (username === 'always') {
     user.badgesStart = ['L.png'];
   }
@@ -2197,10 +2626,15 @@ function renderProfile(){
   const gifts = me.gifts || [];
   let giftsGridHTML = '';
   if(gifts.length > 0){
-    giftsGridHTML = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${me.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}${(me.profileGifts||[]).includes(g.id) ? '<span style="position:absolute;top:4px;left:4px;font-size:12px;">📌</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
+    giftsGridHTML = gifts.map(g => {
+      const src = g.giftAnimated || g.giftImage;
+      return `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${me.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}${(me.profileGifts||[]).includes(g.id) ? '<span style="position:absolute;top:4px;left:4px;font-size:12px;">📌</span>' : ''}<img src="${src}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`;
+    }).join('');
     const rem = gifts.length % 3;
     if(rem !== 0) for(let i = 0; i < 3 - rem; i++) giftsGridHTML += `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
   } else giftsGridHTML = `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
+
+  const myListingsCount = DB.nftListings.filter(l => l.sellerId === me.id).length;
 
   box.innerHTML = `
     ${bannerHTML}
@@ -2230,6 +2664,9 @@ function renderProfile(){
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">${giftsGridHTML}</div>
     <button class="btn btn-primary" onclick="openGiftRecipients()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
       <span style="width:20px;height:20px;display:flex;flex:none;">${SVG.gift}</span> Подарок
+    </button>
+    <button class="btn btn-ghost" onclick="openNFTMarket()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;margin-top:8px;">
+      🏪 NFT Маркет${myListingsCount > 0 ? ' · ' + myListingsCount + ' на продаже' : ''}
     </button>`;
 }
 
@@ -2254,7 +2691,10 @@ function viewUserProfile(userId){
   const gifts = csG ? (u.gifts || []) : [];
   let gg = '';
   if(gifts.length > 0){
-    gg = gifts.map(g => `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${u.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${g.giftImage}" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`).join('');
+    gg = gifts.map(g => {
+      const src = g.giftAnimated || g.giftImage;
+      return `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;position:relative;contain:layout style paint;cursor:pointer;" onclick="viewGiftDetails('${u.id}', '${g.id}')">${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:4px;right:4px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}<img src="${src}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain;"></div>`;
+    }).join('');
     const rem = gifts.length % 3;
     if(rem !== 0) for(let i = 0; i < 3 - rem; i++) gg += `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
   } else gg = `<div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div><div style="aspect-ratio:1;background:var(--surface-2);border-radius:16px;"></div>`;
@@ -2347,6 +2787,9 @@ function viewGiftDetails(userId, giftId){
   const title = $('#modal-account-title'); if(title) title.textContent = g.isNFT ? 'NFT' : 'Подарок';
   if(!box) return;
 
+  const listing = DB.nftListings.find(l => l.giftId === giftId && l.sellerId === userId);
+  const imgSrc = g.giftAnimated || g.giftImage;
+
   let nftBlock = '';
   if(g.isNFT){
     const ownerId = g.nftCurrentOwnerId || u.id;
@@ -2385,31 +2828,49 @@ function viewGiftDetails(userId, giftId){
           <div class="cell-label">Дата покупки</div>
           <div class="cell-value">${g.nftAcquiredAt ? fmtTime(g.nftAcquiredAt) : '—'}</div>
         </div>
-        <div class="cell">
-          <div class="info-icon">🔒</div>
-          <div class="cell-label">Можно продать</div>
-          <div class="cell-value" style="color:var(--danger);font-weight:600;">Нет</div>
-        </div>
       </div>
     `;
   }
 
   let actionsBlock = '';
   if (isMine) {
-    actionsBlock = `<div class="gift-actions">
-      <button class="btn btn-ghost" onclick="toggleGiftOnProfile('${userId}', '${giftId}')">
-        ${onAvatar ? '📍 Убрать с аватарки' : '📌 Поставить на аватарку'}
-      </button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-account'); openTransferGift('${userId}', '${giftId}')">
-        🎁 Передать другому
-      </button>
-      ${!g.isNFT ? `<button class="btn btn-primary" onclick="sellGift('${userId}', '${giftId}')">💰 Продать за ${sellPrice} звезд</button>` : ''}
-    </div>`;
+    if (g.isNFT) {
+      if (listing) {
+        actionsBlock = `<div class="gift-actions">
+          <div style="text-align:center;padding:12px;background:rgba(251,191,36,0.1);border-radius:12px;font-size:13px;color:var(--gold);font-weight:600;">
+            Выставлен за ${listing.askingPrice} ★${listing.highestBid > 0 ? `, ставка ${listing.highestBid} ★ от @${escapeHtml(listing.highestBidderUsername||'')}` : ''}
+          </div>
+          ${listing.highestBid > 0 ? `<button class="btn btn-primary" onclick="acceptHighestNFTBid('${listing.id}'); closeModal('modal-account');">Принять ${listing.highestBid} ★</button>` : `<button class="btn btn-ghost" onclick="cancelNFTListing('${listing.id}'); closeModal('modal-account');">Снять с продажи</button>`}
+        </div>`;
+      } else {
+        actionsBlock = `<div class="gift-actions">
+          <button class="btn btn-ghost" onclick="toggleGiftOnProfile('${userId}', '${giftId}')">
+            ${onAvatar ? '📍 Убрать с аватарки' : '📌 Поставить на аватарку'}
+          </button>
+          <button class="btn btn-ghost" onclick="closeModal('modal-account'); openTransferGift('${userId}', '${giftId}')">
+            🎁 Передать другому
+          </button>
+          <button class="btn btn-primary" onclick="closeModal('modal-account'); openNFTSellModal('${userId}', '${giftId}')">
+            🏪 Выставить на продажу
+          </button>
+        </div>`;
+      }
+    } else {
+      actionsBlock = `<div class="gift-actions">
+        <button class="btn btn-ghost" onclick="toggleGiftOnProfile('${userId}', '${giftId}')">
+          ${onAvatar ? '📍 Убрать с аватарки' : '📌 Поставить на аватарку'}
+        </button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-account'); openTransferGift('${userId}', '${giftId}')">
+          🎁 Передать другому
+        </button>
+        <button class="btn btn-primary" onclick="sellGift('${userId}', '${giftId}')">💰 Продать за ${sellPrice} звезд</button>
+      </div>`;
+    }
   }
 
   box.innerHTML = `
     <div style="text-align:center;padding:10px 0 20px;">
-      <img src="${g.giftImage}" decoding="async" style="width:100px;height:100px;object-fit:contain;margin:0 auto 12px;">
+      <img src="${imgSrc}" decoding="async" style="width:120px;height:120px;object-fit:contain;margin:0 auto 12px;">
       <div style="font-size:18px;font-weight:700;">${escapeHtml(g.giftName)}</div>
       ${onAvatar ? '<div style="font-size:11px;color:var(--accent-primary);margin-top:4px;">📌 На аватарке</div>' : ''}
     </div>
@@ -2423,8 +2884,7 @@ function viewGiftDetails(userId, giftId){
         <div class="li-main"><div class="li-name">${sender ? nameHTML(sender.name, sender.username, 16) : 'Неизвестный'}</div></div>
       </div>
     </div>
-    ${actionsBlock}
-    ${isMine && g.isNFT ? `<div style="text-align:center;margin-top:8px;padding:12px;background:rgba(239,68,68,0.08);border-radius:12px;font-size:13px;color:var(--danger);font-weight:500;">NFT нельзя продать, но можно передать</div>` : ''}`;
+    ${actionsBlock}`;
   openModal('modal-account');
 }
 
@@ -2451,6 +2911,7 @@ function openTransferGift(userId, giftId) {
   if (!u || u.id !== me.id) return toast('Только свой подарок');
   const g = (u.gifts || []).find(x => x.id === giftId);
   if (!g) return;
+  if (DB.nftListings.some(l => l.giftId === giftId)) return toast('Сначала снимите с продажи');
   const content = $('#gift-transfer-content');
   if (!content) return;
   
@@ -2469,7 +2930,7 @@ function openTransferGift(userId, giftId) {
   
   content.innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
-      <img src="${g.giftImage}" style="width:80px;height:80px;object-fit:contain;">
+      <img src="${g.giftAnimated || g.giftImage}" style="width:80px;height:80px;object-fit:contain;">
       <div style="font-size:16px;font-weight:700;margin-top:8px;">${escapeHtml(g.giftName)}</div>
     </div>
     <div class="input-wrap" style="margin-bottom:16px;">
@@ -2528,14 +2989,12 @@ function confirmTransferGift(recipientId, giftId) {
   if (g.isNFT) {
     newGift.nftCurrentOwnerId = recipient.id;
     newGift.nftAcquiredAt = Date.now();
-    const original = DB.customGifts.find(x => x.id === g.giftId);
-    if (original) original.nftCurrentOwnerId = recipient.id;
   }
   recipient.gifts.push(newGift);
   
   let c = DB.chats.find(x => x.type === 'chat' && !x.name && x.members.includes(me.id) && x.members.includes(recipient.id));
   if (!c) { c = { id: uid(), type: 'chat', name: '', avatar: null, owner: me.id, members: [me.id, recipient.id], messages: [], createdAt: Date.now() }; DB.chats.push(c); }
-  const giftMsg = { id: uid(), uid: me.id, type: 'gift', giftId: g.giftId, giftImage: g.giftImage, giftName: g.giftName, price: g.price, text: g.message || '', ts: Date.now(), nft: !!g.isNFT, transferred: true };
+  const giftMsg = { id: uid(), uid: me.id, type: 'gift', giftId: g.giftId, giftImage: g.giftImage, giftAnimated: g.giftAnimated || null, giftName: g.giftName, price: g.price, text: g.message || '', ts: Date.now(), nft: !!g.isNFT, transferred: true };
   c.messages.push(giftMsg);
   publishPersonalMessage(c, giftMsg);
   
@@ -2550,7 +3009,7 @@ function sellGift(userId, giftId){
   const u = DB.users.find(x => x.id === userId); if(!u || u.id !== me.id) return;
   const idx = u.gifts.findIndex(g => g.id === giftId); if(idx === -1) return;
   const g = u.gifts[idx];
-  if(g.isNFT) return toast('NFT нельзя продать');
+  if(g.isNFT) return toast('NFT: используйте NFT Маркет');
   const sellPrice = Math.floor((g.price || 15) * 0.85);
   me.stars = (me.stars || 0) + sellPrice;
   if (me.profileGifts) me.profileGifts = me.profileGifts.filter(id => id !== giftId);
@@ -2579,6 +3038,7 @@ function renderGiftRecipients(query){
 
 function filterGiftRecipients(value){ renderGiftRecipients(value); }
 
+/* Магазин - использует статичные image (без анимаций) */
 function buildGiftCatalogHTML(){
   const normalGifts = DB.customGifts.filter(g => !g.isPack && (typeof g.stock !== 'number' || g.stock > 0));
   const packs = DB.customGifts.filter(g => g.isPack && (!g.gifts || g.gifts.some(x => typeof x.stock !== 'number' || x.stock > 0)));
@@ -2587,19 +3047,21 @@ function buildGiftCatalogHTML(){
   }
   let html = '';
   normalGifts.forEach(g => {
+      const src = g.image;
       html += `
       <div class="gift-shop-item" data-gift-id="${g.id}" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
         ${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}
-        <img src="${g.image}" decoding="async" style="width:64px;height:64px;object-fit:contain;">
+        <img src="${src}" loading="lazy" decoding="async" style="width:64px;height:64px;object-fit:contain;">
         <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;margin-top:4px;">
            <img src="star.png" decoding="async" style="width:12px;height:12px;"> ${g.price}
         </div>
       </div>`;
   });
   packs.forEach(g => {
+      const src = g.image;
       html += `
       <div class="gift-shop-item" data-pack-id="${g.id}" style="border: 1px solid var(--accent-primary);">
-        <img src="${g.image}" decoding="async" style="width:64px;height:64px;object-fit:contain;">
+        <img src="${src}" loading="lazy" decoding="async" style="width:64px;height:64px;object-fit:contain;">
         <div style="font-size:10px;color:var(--accent-primary);font-weight:700;background:rgba(59,130,246,0.1);padding:2px 6px;border-radius:6px;margin-top:4px;">ПАК</div>
         <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;margin-top:4px;">
            <img src="star.png" decoding="async" style="width:12px;height:12px;"> ${g.price}
@@ -2623,6 +3085,7 @@ function openGiftCatalog(userId){
   requestAnimationFrame(() => { requestAnimationFrame(() => { openModal('modal-gift-catalog'); }); });
 }
 
+/* Пак - тоже статика */
 function openGiftPack(packId) {
   const pack = DB.customGifts.find(g => g.id === packId);
   if (!pack) return;
@@ -2631,7 +3094,7 @@ function openGiftPack(packId) {
   grid.innerHTML = pack.gifts.map(g => `
     <div class="gift-shop-item" onclick="openGiftSend('${pack.id}', '${g.id}')" style="${g.isNFT ? 'border:1px solid #8b5cf6;' : ''}">
       ${g.isNFT ? '<span class="nft-badge" style="position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;">NFT</span>' : ''}
-      <img src="${g.image}" decoding="async" style="width:64px;height:64px;object-fit:contain;">
+      <img src="${g.image}" loading="lazy" decoding="async" style="width:64px;height:64px;object-fit:contain;">
       <div style="font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px;margin-top:4px;">
         <img src="star.png" decoding="async" style="width:12px;height:12px;"> ${g.price}
       </div>
@@ -2639,6 +3102,7 @@ function openGiftPack(packId) {
   openModal('modal-gift-pack');
 }
 
+/* Превью отправки - анимация */
 function openGiftSend(packId, giftId){
   currentPackId = packId;
   giftSelectedId = giftId;
@@ -2654,10 +3118,11 @@ function openGiftSend(packId, giftId){
   if (!gift) return;
   const recipient = DB.users.find(u => u.id === giftRecipientId);
   const content = $('#gift-send-content'); if(!content) return;
+  const previewSrc = gift.animatedImage || gift.image;
   content.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:12px;">
       ${gift.isNFT ? '<span class="nft-badge">NFT · УНИКАЛЬНЫЙ</span>' : ''}
-      <img src="${gift.image}" decoding="async" style="width:120px;height:120px;object-fit:contain;">
+      <img src="${previewSrc}" decoding="async" style="width:120px;height:120px;object-fit:contain;">
       <div style="font-size:18px;font-weight:700;">${escapeHtml(gift.name)}</div>
       <div style="font-size:15px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:4px;">
         <img src="star.png" decoding="async" style="width:16px;height:16px;object-fit:contain;"> ${gift.price}
@@ -2690,6 +3155,7 @@ function confirmSendGift(){
   if(!recipient.gifts) recipient.gifts = [];
   const giftEntry = {
     id: uid(), fromId: me.id, giftId: gift.id, giftName: gift.name, giftImage: gift.image,
+    giftAnimated: gift.animatedImage || null,
     price: gift.price, message, ts: Date.now()
   };
   if(gift.isNFT){
@@ -2706,7 +3172,7 @@ function confirmSendGift(){
   recipient.gifts.push(giftEntry);
   let c = DB.chats.find(x => x.type === 'chat' && !x.name && x.members.includes(me.id) && x.members.includes(recipient.id));
   if(!c){ c = { id:uid(), type:'chat', name:'', avatar:null, owner:me.id, members:[me.id, recipient.id], messages:[], createdAt:Date.now() }; DB.chats.push(c); }
-  const giftMsg = { id:uid(), uid:me.id, type:'gift', giftId:gift.id, giftImage:gift.image, giftName:gift.name, price:gift.price, text:message, ts:Date.now(), nft: !!gift.isNFT };
+  const giftMsg = { id:uid(), uid:me.id, type:'gift', giftId:gift.id, giftImage:gift.image, giftAnimated: gift.animatedImage || null, giftName:gift.name, price:gift.price, text:message, ts:Date.now(), nft: !!gift.isNFT };
   c.messages.push(giftMsg);
   save(); closeModal('modal-gift-send');
   if (typeof stockSource.stock === 'number' && !currentPackId) {
@@ -2944,12 +3410,12 @@ function renderSingleMessage(c, m) {
     return `<div class="msg system-msg" style="align-self:center;background:var(--surface-1);padding:12px;border-radius:12px;font-size:13px;color:var(--text-secondary);text-align:center;">📞 Заявка</div>`;
   }
   if(m.type === 'gift'){
-    const sellPrice = Math.floor((m.price || 15) * 0.85);
-    return `<div class="msg gift-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><div class="gift-bubble"><img src="${m.giftImage}" decoding="async" class="gift-bubble-img"><div class="gift-bubble-title">${escapeHtml(m.giftName)}</div>${m.text ? `<div class="gift-bubble-text">"${escapeHtml(m.text)}"</div>` : ''}<div class="gift-bubble-hint">${m.nft ? 'NFT' : (m.transferred ? 'Передан' : 'Продать за ' + sellPrice + ' звезд')}</div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+    const src = m.giftAnimated || m.giftImage;
+    return `<div class="msg gift-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><div class="gift-bubble"><img src="${src}" decoding="async" class="gift-bubble-img"><div class="gift-bubble-title">${escapeHtml(m.giftName)}</div>${m.text ? `<div class="gift-bubble-text">"${escapeHtml(m.text)}"</div>` : ''}<div class="gift-bubble-hint">${m.nft ? 'NFT' : (m.transferred ? 'Передан' : 'Продать за ' + Math.floor((m.price||15)*0.85) + ' звезд')}</div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
   }
-  if(m.type === 'image') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:4px;background:${mine ? 'var(--accent-primary)' : 'var(--surface-1)'};"><img src="${m.image}" decoding="async" style="max-width:100%;border-radius:14px;display:block;max-height:300px;object-fit:cover;"></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  if(m.type === 'image') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:4px;background:${mine ? 'var(--accent-primary)' : 'var(--surface-1)'};"><img src="${m.image}" loading="lazy" decoding="async" style="max-width:100%;border-radius:14px;display:block;max-height:300px;object-fit:cover;"></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
   if(m.type === 'file') return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="padding:12px;"><div class="file-bubble"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">${escapeHtml(m.fileName)}</div><div class="file-size">${m.fileSize}</div></div><a href="${m.image}" download="${escapeHtml(m.fileName)}" class="file-download">↓</a></div></div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
-  if(m.type === 'sticker') return `<div class="msg sticker-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><img src="${m.image}" decoding="async" class="sticker-img" onclick="openStickerView('${m.image}', '${escapeHtml(m.stickerName)}')"><div class="sticker-name">${escapeHtml(m.stickerName)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
+  if(m.type === 'sticker') return `<div class="msg sticker-msg" ondblclick="deleteMessage('${c.id}', '${m.id}')"><img src="${m.image}" loading="lazy" decoding="async" class="sticker-img" onclick="openStickerView('${m.image}', '${escapeHtml(m.stickerName)}')"><div class="sticker-name">${escapeHtml(m.stickerName)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
   const radiusStyle = `border-top-left-radius:${cs.cornerSize}px;border-top-right-radius:${cs.cornerSize}px;border-bottom-left-radius:${mine ? cs.cornerSize : 4}px;border-bottom-right-radius:${mine ? 4 : cs.cornerSize}px`;
   return `<div class="msg ${mine ? 'mine' : ''}" ondblclick="deleteMessage('${c.id}', '${m.id}')">${showAuthor ? `<div class="msg-author">${isChannelMsg ? escapeHtml(c.name) : (author ? nameHTML(author.name, author.username, 14) : '—')}</div>` : ''}<div class="bubble" style="font-size:${cs.textSize}px;${radiusStyle}">${escapeHtml(m.text)}</div><div class="msg-time">${fmtTime(m.ts)}</div></div>`;
 }
@@ -3042,7 +3508,6 @@ function processCommand(text, chat) {
       return true;
     }
 
-    /* FIX: /veri теперь открывает админ-панель на вкладке "Значки" */
     case '/veri': {
       if (!canAdmin) { toast('❌ Недостаточно прав'); return true; }
       const target = findTarget(parts[1]);
@@ -3060,7 +3525,6 @@ function processCommand(text, chat) {
       const u = DB.users.find(x => x.id === target.id);
       if (!u) { toast('❌ Ошибка'); return true; }
       u.badgesStart = []; u.badgesEnd = [];
-      // @always не трогаем
       if (String(u.username).toLowerCase() === 'always') {
         u.badgesStart = ['L.png'];
       }
@@ -3182,7 +3646,7 @@ function openStickerView(img, name){ viewedStickerData = { img, name }; document
 function addStickerToPack(){ if(!viewedStickerData || !me) return; if(!me.savedStickers) me.savedStickers = []; if(me.savedStickers.some(s => s.img === viewedStickerData.img)) return toast('Уже добавлен'); me.savedStickers.push(viewedStickerData); save(); closeModal('modal-sticker-view'); toast('Добавлено'); }
 function toggleEmojiPanel(){ const p = document.getElementById('emoji-panel'); p.classList.toggle('show'); if(p.classList.contains('show')) renderEmojiContent(currentEmojiTab); }
 function switchEmojiTab(tab, ev){ currentEmojiTab = tab; document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active')); if(ev && ev.target) ev.target.classList.add('active'); renderEmojiContent(tab); }
-function renderEmojiContent(tab){ const content = document.getElementById('emoji-content'); if(tab === 'emoji'){ content.innerHTML = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'].map(e => `<div class="emoji-item" onclick="insertEmoji('${e}')">${e}</div>`).join(''); } else { const st = me.savedStickers || []; if(!st.length){ content.innerHTML = '<div style="grid-column:span 6;text-align:center;color:var(--text-secondary);padding:20px;">Нет стикеров</div>'; return; } content.innerHTML = st.map(s => `<img src="${s.img}" decoding="async" class="sticker-item" onclick="sendSticker('${s.img}')">`).join(''); } }
+function renderEmojiContent(tab){ const content = document.getElementById('emoji-content'); if(tab === 'emoji'){ content.innerHTML = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'].map(e => `<div class="emoji-item" onclick="insertEmoji('${e}')">${e}</div>`).join(''); } else { const st = me.savedStickers || []; if(!st.length){ content.innerHTML = '<div style="grid-column:span 6;text-align:center;color:var(--text-secondary);padding:20px;">Нет стикеров</div>'; return; } content.innerHTML = st.map(s => `<img src="${s.img}" loading="lazy" decoding="async" class="sticker-item" onclick="sendSticker('${s.img}')">`).join(''); } }
 function insertEmoji(emoji){ const i = document.getElementById('msg-input'); i.value += emoji; i.focus(); }
 function sendSticker(img){ if(!currentChatId) return; const c = DB.chats.find(x => x.id === currentChatId); if(!c) return; const m = { id:uid(), uid:me.id, type:'sticker', image:img, stickerName:'Стикер', ts:Date.now() }; c.messages.push(m); if (c.type === 'chat' && !c.name && c.members.length === 2) publishPersonalMessage(c, m); save(); appendMessageToChat(c, m); document.getElementById('emoji-panel').classList.remove('show'); }
 
@@ -3286,7 +3750,6 @@ function setAdminStarAction(action){ adminStarAction = action; document.querySel
 function adminModifyStars(){ const unEl = document.getElementById('admin-star-username'); const amtEl = document.getElementById('admin-star-amount'); const un = (unEl.value || '').trim().replace(/^@+/, '').toLowerCase(); const amt = parseInt(amtEl.value); if(!un) return toast('Юзернейм?'); if(isNaN(amt) || amt <= 0) return toast('Кол-во?'); const target = DB.users.find(u => String(u.username || '').toLowerCase() === un); if(!target) return toast('Не найден'); if (adminStarAction === 'add') { target.stars = (target.stars || 0) + amt; } else if (adminStarAction === 'subtract') { target.stars = Math.max(0, (target.stars || 0) - amt); } else if (adminStarAction === 'set') { target.stars = amt; } save(); broadcastUserProfile(target, true); unEl.value = ''; amtEl.value = ''; renderAdminStars(); if(target.id === me.id) renderProfile(); toast('Готово'); }
 function renderAdminStars(){ const list = document.getElementById('adm-stars-users'); if(!list) return; const users = DB.users.filter(u => !u.isBot).sort((a,b) => (b.stars||0) - (a.stars||0)); if(!users.length){ list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Нет пользователей</div>'; return; } list.innerHTML = users.map(u => `<div class="admin-star-user">${avatarHTML(u.avatar, u.name, 36)}<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">${nameHTML(u.name, u.username, 14)}</div><div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(u.username)}</div></div><div style="font-weight:700;color:var(--gold);display:flex;align-items:center;gap:4px;font-size:14px;"><img src="star.png" decoding="async" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;"> ${displayStars(u)}</div></div>`).join(''); }
 
-/* ===== ADMIN BADGES (НОВЫЕ ФУНКЦИИ) ===== */
 function setAdminBadgePos(pos) {
   adminBadgePos = pos;
   document.querySelectorAll('#adm-badge-pos button').forEach((b, i) => {
@@ -3336,13 +3799,11 @@ function admGiveBadge() {
     if (!target.badgesEnd.includes(adminBadgeData)) target.badgesEnd.push(adminBadgeData);
   }
   save();
-  // Если это @always — гарантируем L.png
   if (String(target.username).toLowerCase() === 'always') {
     if (!Array.isArray(target.badgesStart)) target.badgesStart = [];
     if (!target.badgesStart.includes('L.png')) target.badgesStart.unshift('L.png');
     save();
   }
-  // Оповещаем всех (в т.ч. самого получателя — force:true)
   broadcastUserProfile(target, true);
   if (target.id === me.id) broadcastProfile();
   unEl.value = '';
@@ -3356,7 +3817,6 @@ function admRemoveBadge(userId, pos, idx) {
   if (!u) return;
   if (pos === 'start' && Array.isArray(u.badgesStart)) {
     const badge = u.badgesStart[idx];
-    // @always нельзя снять L.png
     if (String(u.username).toLowerCase() === 'always' && badge === 'L.png') {
       return toast('У @always нельзя снять L.png');
     }
@@ -3364,7 +3824,6 @@ function admRemoveBadge(userId, pos, idx) {
   } else if (pos === 'end' && Array.isArray(u.badgesEnd)) {
     u.badgesEnd.splice(idx, 1);
   }
-  // @always — гарантируем L.png
   if (String(u.username).toLowerCase() === 'always') {
     if (!Array.isArray(u.badgesStart)) u.badgesStart = [];
     if (!u.badgesStart.includes('L.png')) u.badgesStart.unshift('L.png');
@@ -3399,6 +3858,7 @@ function renderAdminBadges() {
     </div>`).join('');
 }
 
+/* Генерация статики для новых загрузок + сохранение анимированной версии */
 function handleAdminGiftUpload(input){
   const files = Array.from(input.files || []);
   if(!files.length) return;
@@ -3411,9 +3871,30 @@ function handleAdminGiftUpload(input){
   toast('Обработка ' + total + ' файлов...');
   const done = () => { processed++; if (processed >= total) { bulkUploadItems = results.filter(Boolean); input.value = ''; if (bulkUploadItems.length) openBulkUploadModal(); else toast('Не удалось загрузить'); } };
   images.forEach((file, i) => {
-    const process = (dataUrl) => { if (dataUrl) { results[i] = { name: file.name.replace(/\.[^.]+$/, ''), image: dataUrl, price: 15, stock: 10, isNFT: false }; } done(); };
-    if (isAnimatedImage(file)) { const reader = new FileReader(); reader.onload = () => process(reader.result); reader.onerror = () => process(null); reader.readAsDataURL(file); }
-    else { compressGiftImage(file, (compressed) => process(compressed || null)); }
+    const finish = async (dataUrl, wasAnimated) => {
+      if (!dataUrl) { done(); return; }
+      let staticUrl = dataUrl;
+      let animatedUrl = null;
+      if (wasAnimated) {
+        try { staticUrl = await convertAnimatedToStatic(dataUrl); } catch(e){ staticUrl = dataUrl; }
+        if (staticUrl !== dataUrl) animatedUrl = dataUrl;
+      }
+      results[i] = {
+        name: file.name.replace(/\.[^.]+$/, ''),
+        image: staticUrl,
+        animatedImage: animatedUrl,
+        price: 15, stock: 10, isNFT: false
+      };
+      done();
+    };
+    if (isAnimatedImage(file)) {
+      const reader = new FileReader();
+      reader.onload = () => finish(reader.result, true);
+      reader.onerror = () => finish(null, true);
+      reader.readAsDataURL(file);
+    } else {
+      compressGiftImage(file, (compressed) => finish(compressed || null, false));
+    }
   });
 }
 
@@ -3423,7 +3904,7 @@ function renderBulkItems(){
   const list = document.getElementById('bulk-items-list'); if(!list) return;
   list.innerHTML = bulkUploadItems.map((item, i) => `
     <div class="bulk-item" data-index="${i}">
-      <img src="${item.image}" decoding="async" alt="">
+      <img src="${item.image}" loading="lazy" decoding="async" alt="">
       <div class="bulk-body">
         <input type="text" value="${escapeHtml(item.name)}" placeholder="Название" oninput="bulkUpdate(${i}, 'name', this.value)">
         <div class="bulk-row">
@@ -3448,10 +3929,10 @@ function saveBulkGifts(){
   let pack = null;
   if (packName) {
     pack = DB.customGifts.find(g => g.isPack && g.name === packName);
-    if (!pack) { const firstImage = bulkUploadItems[0].image; pack = { id: uid(), name: packName, image: firstImage, price: 15, stock: 100, isPack: true, gifts: [] }; DB.customGifts.push(pack); }
+    if (!pack) { const firstImage = bulkUploadItems[0].image; pack = { id: uid(), name: packName, image: firstImage, animatedImage: bulkUploadItems[0].animatedImage || null, price: 15, stock: 100, isPack: true, gifts: [] }; DB.customGifts.push(pack); }
   }
   const newGifts = bulkUploadItems.map(item => {
-    const gift = { id: uid(), name: (item.name || 'Подарок').trim() || 'Подарок', image: item.image, price: Math.max(0, parseInt(item.price) || 0), stock: item.isNFT ? 1 : Math.max(0, parseInt(item.stock) || 0) };
+    const gift = { id: uid(), name: (item.name || 'Подарок').trim() || 'Подарок', image: item.image, animatedImage: item.animatedImage || null, price: Math.max(0, parseInt(item.price) || 0), stock: item.isNFT ? 1 : Math.max(0, parseInt(item.stock) || 0) };
     if (item.isNFT) { gift.isNFT = true; gift.nftPrice = gift.price; gift.nftCreatorId = me.id; gift.nftMintedAt = Date.now(); }
     return gift;
   });
@@ -3591,12 +4072,12 @@ function saveAdminGiftCreate(){
   let newGift;
   if(createdType === 'nft'){
     const nftPrice = Math.max(0, parseInt(document.getElementById('admin-gift-create-nft-price').value) || price);
-    newGift = { id: uid(), name, image: adminGiftCreateData.image, price, isNFT: true, stock: 1, nftPrice, nftCreatorId: me.id, nftMintedAt: Date.now() };
+    newGift = { id: uid(), name, image: adminGiftCreateData.image, animatedImage: adminGiftCreateData.animatedImage || null, price, isNFT: true, stock: 1, nftPrice, nftCreatorId: me.id, nftMintedAt: Date.now() };
   } else {
     const stock = Math.max(0, parseInt(document.getElementById('admin-gift-create-stock').value) || 10);
-    newGift = { id: uid(), name, image: adminGiftCreateData.image, price, stock };
+    newGift = { id: uid(), name, image: adminGiftCreateData.image, animatedImage: adminGiftCreateData.animatedImage || null, price, stock };
   }
-  if(packName){ let pack = DB.customGifts.find(g => g.isPack && g.name === packName); if(!pack){ pack = { id: uid(), name: packName, image: adminGiftCreateData.image, price: 15, stock: 10, isPack: true, gifts: [] }; DB.customGifts.push(pack); } pack.gifts.push(newGift); }
+  if(packName){ let pack = DB.customGifts.find(g => g.isPack && g.name === packName); if(!pack){ pack = { id: uid(), name: packName, image: adminGiftCreateData.image, animatedImage: adminGiftCreateData.animatedImage || null, price: 15, stock: 10, isPack: true, gifts: [] }; DB.customGifts.push(pack); } pack.gifts.push(newGift); }
   else { DB.customGifts.push(newGift); }
   save(); markGiftCatalogDirty(); closeAdminGiftCreate(); renderAdminGifts(); toast(createdType === 'nft' ? 'NFT создан' : 'Подарок создан');
 }
@@ -3629,7 +4110,6 @@ async function init(){
     });
   }
 
-  // предзаполняем preview значка в админке
   renderAdminBadgePreview();
 
   setInterval(() => {
@@ -3653,6 +4133,7 @@ async function init(){
           $('#modal-code-login').classList.add('show'); 
         }
         else { ensureBotChat(); enterApp(); initPubNub(); }
+        setTimeout(() => { migrateAnimatedImages().catch(e => console.warn(e)); }, 800);
         return;
       }
     }
